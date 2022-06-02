@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="shuhuai.wheremoney.mapper.PayBillMapper">
+    <resultMap id="PayBillResultMap" type="shuhuai.wheremoney.entity.PayBill">
+        <id column="id" jdbcType="INTEGER" javaType="Integer" property="id"/>
+        <result column="book_id" jdbcType="INTEGER" javaType="Integer" property="bookId"/>
+        <result column="pay_asset_id" jdbcType="INTEGER" javaType="Integer" property="payAssetId"/>
+        <result column="bill_category_id" jdbcType="INTEGER" javaType="Integer" property="billCategoryId"/>
+        <result column="amount" jdbcType="DECIMAL" javaType="BigDecimal" property="amount"/>
+        <result column="bill_time" jdbcType="TIMESTAMP" javaType="java.sql.Timestamp" property="billTime"/>
+        <result column="remark" jdbcType="VARCHAR" javaType="String" property="remark"/>
+        <result column="image" property="image" typeHandler="org.apache.ibatis.type.BlobTypeHandler"/>
+    </resultMap>
+    <insert id="insertPayBillSelective" useGeneratedKeys="true" keyProperty="id"
+            parameterType="shuhuai.wheremoney.entity.PayBill">
+        insert into pay_bill
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="bookId != null">
+                book_id,
+            </if>
+            <if test="payAssetId != null">
+                pay_asset_id,
+            </if>
+            <if test="billCategoryId != null">
+                bill_category_id,
+            </if>
+            <if test="amount != null">
+                amount,
+            </if>
+            <if test="billTime != null">
+                bill_time,
+            </if>
+            <if test="remark != null">
+                remark,
+            </if>
+            <if test="image != null">
+                image,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="bookId != null">
+                #{bookId,jdbcType=INTEGER},
+            </if>
+            <if test="payAssetId != null">
+                #{payAssetId,jdbcType=INTEGER},
+            </if>
+            <if test="billCategoryId != null">
+                #{billCategoryId,jdbcType=INTEGER},
+            </if>
+            <if test="amount != null">
+                #{amount,jdbcType=DECIMAL},
+            </if>
+            <if test="billTime != null">
+                #{billTime,jdbcType=DATE},
+            </if>
+            <if test="remark != null">
+                #{remark,jdbcType=VARCHAR},
+            </if>
+            <if test="image != null">
+                #{image,jdbcType=BLOB},
+            </if>
+        </trim>
+    </insert>
+    <select id="selectPayBillByBookId" resultMap="PayBillResultMap">
+        select *
+        from pay_bill
+        where book_id = #{bookId,jdbcType=INTEGER}
+        order by bill_time desc
+    </select>
+    <select id="selectPayBillByBookIdTime" resultMap="PayBillResultMap">
+        select *
+        from pay_bill
+        where book_id = #{bookId,jdbcType=INTEGER}
+          and bill_time &gt;= #{startTime,jdbcType=TIMESTAMP}
+          and bill_time &lt; #{endTime,jdbcType=TIMESTAMP}
+        order by bill_time desc
+    </select>
+    <select id="selectPayBillById" resultMap="PayBillResultMap">
+        select *
+        from pay_bill
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+</mapper>

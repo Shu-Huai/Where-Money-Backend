@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="shuhuai.wheremoney.mapper.BookMapper">
+    <resultMap id="BookResultMap" type="shuhuai.wheremoney.entity.Book">
+        <id column="id" jdbcType="INTEGER" javaType="Integer" property="id"/>
+        <result column="user_id" jdbcType="INTEGER" javaType="Integer" property="userId"/>
+        <result column="title" jdbcType="VARCHAR" javaType="String" property="title"/>
+        <result column="create_time" jdbcType="TIMESTAMP" javaType="java.sql.Timestamp" property="createTime"/>
+        <result column="begin_date" jdbcType="INTEGER" javaType="Integer" property="beginDate"/>
+        <result column="total_budget" jdbcType="DECIMAL" javaType="BigDecimal" property="totalBudget"/>
+        <result column="used_budget" jdbcType="DECIMAL" javaType="BigDecimal" property="usedBudget"/>
+    </resultMap>
+    <insert id="insertBookSelective" useGeneratedKeys="true" keyProperty="id"
+            parameterType="shuhuai.wheremoney.entity.Book">
+        insert into book
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">
+                user_id,
+            </if>
+            <if test="title != null">
+                title,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+            <if test="beginDate != null">
+                begin_date,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">
+                #{userId,jdbcType=INTEGER},
+            </if>
+            <if test="title != null">
+                #{title,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null">
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="beginDate != null">
+                #{beginDate,jdbcType=INTEGER},
+            </if>
+        </trim>
+    </insert>
+    <select id="selectBookById" resultMap="BookResultMap" parameterType="Integer">
+        select *
+        from book
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+    <select id="selectBookByUser" parameterType="shuhuai.wheremoney.entity.User" resultMap="BookResultMap">
+        select *
+        from book
+        where user_id = #{id,jdbcType=INTEGER}
+    </select>
+    <select id="selectBookByUserTitle" resultMap="BookResultMap">
+        select *
+        from book
+        where user_id = #{user.id,jdbcType=INTEGER}
+          and title = #{title,jdbcType=VARCHAR}
+    </select>
+    <select id="selectPayMonthByBookId" resultType="java.math.BigDecimal">
+        select ifnull(month_pay.pay_amount, 0) - ifnull(month_refund.refund_amount, 0)
+        from (select ifnull(sum(amount), 0) as pay_amount
+              from pay_bill
+              where date_format(bill_time, '%Y%m') = date_format(#{month,jdbcType=TIMESTAMP}, '%Y%m')
+                and book_id = #{bookId,jdbcType=INTEGER}) as month_pay,
+             (select ifnull(sum(amount), 0) as refund_amount
+              from refund_bill
+              where pay_bill_id in (select id
+                                    from pay_bill
+                                    where date_format(bill_time, '%Y%m') =
+                                          date_format(#{month,jdbcType=TIMESTAMP}, '%Y%m'))
+                and book_id = #{bookId,jdbcType=INTEGER}) as month_refund;
+    </select>
+    <select id="selectIncomeMonthByBookId" resultType="java.math.BigDecimal">
+        select ifnull(sum(amount), 0)
+        from income_bill
+        where book_id = #{bookId,jdbcType=INTEGER}
+          and date_format(bill_time, '%Y%m') = date_format(#{month,jdbcType=TIMESTAMP}, '%Y%m')
+    </select>
+    <select id="selectBalanceMonthByBookId" resultType="java.math.BigDecimal">
+        select ifnull(month_income.income_amount, 0) - ifnull(month_pay.pay_amount, 0) +
+               ifnull(month_refund.refund_amount, 0)
+        from (select ifnull(sum(amount), 0) as pay_amount
+              from pay_bill
+              where date_format(bill_time, '%Y%m') = date_format(#{month,jdbcType=TIMESTAMP}, '%Y%m')
+                and book_id = #{bookId,jdbcType=INTEGER}) as month_pay,
+             (select ifnull(sum(amount), 0) as refund_amount
+              from refund_bill
+              where pay_bill_id in (select id
+                                    from pay_bill
+                                    where date_format(bill_time, '%Y%m') =
+                                          date_format(#{month,jdbcType=TIMESTAMP}, '%Y%m'))
+                and book_id = #{bookId,jdbcType=INTEGER}) as month_refund,
+             (select ifnull(sum(amount), 0) as income_amount
+              from income_bill
+              where date_format(bill_time, '%Y%m') = date_format(#{month,jdbcType=TIMESTAMP}, '%Y%m')
+                and book_id = #{bookId,jdbcType=INTEGER}) as month_income;
+    </select>
+    <select id="selectRefundMonthByBookId" resultType="java.math.BigDecimal">
+        select ifnull(sum(amount), 0)
+        from refund_bill
+        where book_id = #{bookId,jdbcType=INTEGER}
+          and date_format(bill_time, '%Y%m') = date_format(#{month,jdbcType=TIMESTAMP}, '%Y%m')
+    </select>
+</mapper>

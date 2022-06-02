@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="shuhuai.wheremoney.mapper.BudgetMapper">
+    <resultMap id="BudgetResultMap" type="shuhuai.wheremoney.entity.Budget">
+        <id column="id" jdbcType="INTEGER" javaType="Integer" property="id"/>
+        <result column="book_id" jdbcType="INTEGER" javaType="Integer" property="bookId"/>
+        <result column="bill_category_id" jdbcType="INTEGER" javaType="Integer" property="billCategoryId"/>
+        <result column="used" jdbcType="DECIMAL" javaType="BigDecimal" property="used"/>
+        <result column="limit_amount" jdbcType="DECIMAL" javaType="BigDecimal" property="limit"/>
+        <result column="times" jdbcType="INTEGER" javaType="Integer" property="times"/>
+    </resultMap>
+    <insert id="insertBudget" useGeneratedKeys="true" keyProperty="id"
+            parameterType="shuhuai.wheremoney.entity.Budget">
+        insert into budget
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="bookId != null">
+                book_id,
+            </if>
+            <if test="billCategoryId != null">
+                bill_category_id,
+            </if>
+            <if test="limit != null">
+                limit_amount,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="bookId != null">
+                #{bookId,jdbcType=INTEGER},
+            </if>
+            <if test="billCategoryId != null">
+                #{billCategoryId,jdbcType=INTEGER},
+            </if>
+            <if test="limit != null">
+                #{limit,jdbcType=DECIMAL},
+            </if>
+        </trim>
+    </insert>
+    <select id="selectBudgetsByBook"
+            resultMap="BudgetResultMap">
+        select *
+        from budget
+        where book_id = #{bookId,jdbcType=INTEGER}
+    </select>
+    <select id="selectBudgetById"
+            resultMap="BudgetResultMap">
+        select *
+        from budget
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+    <select id="selectBudgetByCategoryId"
+            resultMap="BudgetResultMap">
+        select *
+        from budget
+        where bill_category_id = #{billCategoryId,jdbcType=INTEGER}
+    </select>
+    <select id="selectTotalBudgetByBook"
+            resultType="java.math.BigDecimal">
+        select total_budget
+        from book
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+    <update id="updateTotalBudgetByBook">
+        update book
+        <set>
+            <if test="totalBudget != null">
+                total_budget = #{totalBudget,jdbcType=DECIMAL},
+            </if>
+            <if test="usedBudget != null">
+                used_budget = #{usedBudget,jdbcType=DECIMAL},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <update id="updateBudgetById" parameterType="shuhuai.wheremoney.entity.Budget">
+        update budget
+        <set>
+            <if test="billCategoryId != null">
+                bill_category_id = #{billCategoryId,jdbcType=INTEGER},
+            </if>
+            <if test="used != null">
+                used = #{used,jdbcType=VARCHAR},
+            </if>
+            <if test="limit != null">
+                limit_amount = #{limit,jdbcType=VARCHAR},
+            </if>
+            <if test="times != null">
+                times = #{times,jdbcType=INTEGER},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+</mapper>

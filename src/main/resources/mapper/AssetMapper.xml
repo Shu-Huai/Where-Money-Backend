@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="shuhuai.wheremoney.mapper.AssetMapper">
+    <resultMap id="AssetResultMap" type="shuhuai.wheremoney.entity.Asset">
+        <id column="id" jdbcType="INTEGER" javaType="Integer" property="id"/>
+        <result column="user_id" jdbcType="INTEGER" javaType="Integer" property="userId"/>
+        <result column="type" javaType="shuhuai.wheremoney.type.AssetType" property="type"
+                typeHandler="shuhuai.wheremoney.type.AssetTypeHandler"/>
+        <result column="balance" jdbcType="DECIMAL" javaType="BigDecimal" property="balance"/>
+        <result column="asset_name" jdbcType="VARCHAR" javaType="String" property="assetName"/>
+        <result column="bill_date" jdbcType="INTEGER" javaType="Integer" property="billDate"/>
+        <result column="repay_date" jdbcType="INTEGER" javaType="Integer" property="repayDate"/>
+        <result column="quota" jdbcType="DECIMAL" javaType="BigDecimal" property="quota"/>
+        <result column="in_total" jdbcType="BOOLEAN" javaType="Boolean" property="inTotal"/>
+        <result column="svg" jdbcType="VARCHAR" javaType="String" property="svg"/>
+    </resultMap>
+    <insert id="insertAssetSelective" useGeneratedKeys="true" keyProperty="id"
+            parameterType="shuhuai.wheremoney.entity.Asset">
+        insert into asset
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">
+                user_id,
+            </if>
+            <if test="type != null">
+                type,
+            </if>
+            <if test="balance != null">
+                balance,
+            </if>
+            <if test="assetName != null">
+                asset_name,
+            </if>
+            <if test="billDate != null">
+                bill_date,
+            </if>
+            <if test="repayDate != null">
+                repay_date,
+            </if>
+            <if test="quota != null">
+                quota,
+            </if>
+            <if test="inTotal != null">
+                in_Total,
+            </if>
+            <if test="svg != null">
+                svg,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">
+                #{userId,jdbcType=INTEGER},
+            </if>
+            <if test="type != null">
+                #{type},
+            </if>
+            <if test="balance != null">
+                #{balance,jdbcType=DECIMAL},
+            </if>
+            <if test="assetName != null">
+                #{assetName,jdbcType=VARCHAR},
+            </if>
+            <if test="billDate != null">
+                #{billDate,jdbcType=INTEGER},
+            </if>
+            <if test="repayDate != null">
+                #{repayDate,jdbcType=INTEGER},
+            </if>
+            <if test="quota != null">
+                #{quota,jdbcType=DECIMAL},
+            </if>
+            <if test="inTotal != null">
+                #{inTotal,jdbcType=BOOLEAN},
+            </if>
+            <if test="svg != null">
+                #{svg,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+    <select id="selectAssetByUserId" resultMap="AssetResultMap">
+        select *
+        from asset
+        where user_id = #{userId,jdbcType=INTEGER}
+    </select>
+    <select id="selectAssetById" resultMap="AssetResultMap">
+        select *
+        from asset
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+    <update id="updateAssetSelectiveById" parameterType="shuhuai.wheremoney.entity.Asset">
+        update asset
+        <set>
+            <if test="userId != null">
+                user_id = #{userId,jdbcType=INTEGER},
+            </if>
+            <if test="type != null">
+                type = #{type},
+            </if>
+            <if test="balance != null">
+                balance = #{balance,jdbcType=DECIMAL},
+            </if>
+            <if test="assetName != null">
+                asset_name = #{assetName,jdbcType=VARCHAR},
+            </if>
+            <if test="billDate != null">
+                bill_date = #{billDate,jdbcType=INTEGER},
+            </if>
+            <if test="repayDate != null">
+                repay_date = #{repayDate,jdbcType=INTEGER},
+            </if>
+            <if test="quota != null">
+                quota = #{quota,jdbcType=DECIMAL},
+            </if>
+            <if test="inTotal != null">
+                in_Total = #{inTotal,jdbcType=BOOLEAN},
+            </if>
+            <if test="svg != null">
+                svg = #{svg,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <select id="selectTotalAssetByUserId" resultType="java.math.BigDecimal">
+        select sum(balance)
+        from asset
+        where user_id = #{userId,jdbcType=INTEGER}
+    </select>
+</mapper>

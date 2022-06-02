@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="shuhuai.wheremoney.mapper.TransferBillMapper">
+    <resultMap id="TransferBillResultMap" type="shuhuai.wheremoney.entity.TransferBill">
+        <id column="id" jdbcType="INTEGER" javaType="Integer" property="id"/>
+        <result column="book_id" jdbcType="INTEGER" javaType="Integer" property="bookId"/>
+        <result column="in_asset_id" jdbcType="INTEGER" javaType="Integer" property="inAssetId"/>
+        <result column="out_asset_id" jdbcType="INTEGER" javaType="Integer" property="outAssetId"/>
+        <result column="amount" jdbcType="DECIMAL" javaType="BigDecimal" property="amount"/>
+        <result column="transfer_fee" jdbcType="DECIMAL" javaType="BigDecimal" property="transferFee"/>
+        <result column="bill_time" jdbcType="TIMESTAMP" javaType="java.sql.Timestamp" property="billTime"/>
+        <result column="remark" jdbcType="VARCHAR" javaType="String" property="remark"/>
+        <result column="image" property="image" typeHandler="org.apache.ibatis.type.BlobTypeHandler"/>
+    </resultMap>
+    <insert id="insertTransferBillSelective" useGeneratedKeys="true" keyProperty="id"
+            parameterType="shuhuai.wheremoney.entity.TransferBill">
+        insert into transfer_bill
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="bookId != null">
+                book_id,
+            </if>
+            <if test="inAssetId != null">
+                in_asset_id,
+            </if>
+            <if test="outAssetId != null">
+                out_asset_id,
+            </if>
+            <if test="amount != null">
+                amount,
+            </if>
+            <if test="transferFee != null">
+                transfer_fee,
+            </if>
+            <if test="billTime != null">
+                bill_time,
+            </if>
+            <if test="remark != null">
+                remark,
+            </if>
+            <if test="image != null">
+                image,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="bookId != null">
+                #{bookId,jdbcType=INTEGER},
+            </if>
+            <if test="inAssetId != null">
+                #{inAssetId,jdbcType=INTEGER},
+            </if>
+            <if test="outAssetId != null">
+                #{outAssetId,jdbcType=INTEGER},
+            </if>
+            <if test="amount != null">
+                #{amount,jdbcType=DECIMAL},
+            </if>
+            <if test="transferFee != null">
+                #{transferFee,jdbcType=DECIMAL},
+            </if>
+            <if test="billTime != null">
+                #{billTime,jdbcType=DATE},
+            </if>
+            <if test="remark != null">
+                #{remark,jdbcType=VARCHAR},
+            </if>
+            <if test="image != null">
+                #{image,jdbcType=BLOB},
+            </if>
+        </trim>
+    </insert>
+    <select id="selectTransferBillByBookId" resultMap="TransferBillResultMap">
+        select *
+        from transfer_bill
+        where book_id = #{bookId,jdbcType=INTEGER}
+        order by bill_time desc
+    </select>
+    <select id="selectTransferBillByBookIdTime" resultMap="TransferBillResultMap">
+        select *
+        from transfer_bill
+        where book_id = #{bookId,jdbcType=INTEGER}
+          and bill_time &gt;= #{startTime,jdbcType=TIMESTAMP}
+          and bill_time &lt; #{endTime,jdbcType=TIMESTAMP}
+        order by bill_time desc
+    </select>
+    <select id="selectTransferBillById" resultMap="TransferBillResultMap">
+        select *
+        from transfer_bill
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+</mapper>

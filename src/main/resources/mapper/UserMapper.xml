@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="shuhuai.wheremoney.mapper.UserMapper">
+    <resultMap id="UserResultMap" type="shuhuai.wheremoney.entity.User">
+        <id column="id" jdbcType="INTEGER" javaType="Integer" property="id"/>
+        <result column="user_name" jdbcType="VARCHAR" javaType="String" property="userName"/>
+        <result column="hashed_password" jdbcType="VARCHAR" javaType="String" property="hashedPassword"/>
+        <result column="is_active" jdbcType="BOOLEAN" javaType="Boolean" property="isActive"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+    </resultMap>
+    <insert id="insertUser" useGeneratedKeys="true" keyProperty="id">
+        insert into user (user_name, hashed_password, is_active, create_time)
+        values (#{userName,jdbcType=VARCHAR}, #{hashedPassword,jdbcType=VARCHAR},
+                #{isActive,jdbcType=BOOLEAN}, #{createTime,jdbcType=TIMESTAMP})
+    </insert>
+    <insert id="insertUserSelective" useGeneratedKeys="true" keyProperty="id"
+            parameterType="shuhuai.wheremoney.entity.User">
+        insert into user
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userName != null">
+                user_name,
+            </if>
+            <if test="hashedPassword != null">
+                hashed_password,
+            </if>
+            <if test="isActive != null">
+                is_active,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userName != null">
+                #{userName,jdbcType=VARCHAR},
+            </if>
+            <if test="hashedPassword != null">
+                #{hashedPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="isActive != null">
+                #{isActive,jdbcType=BOOLEAN},
+            </if>
+            <if test="createTime != null">
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+    <delete id="deleteUserByUserId">
+        delete
+        from user
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
+    <update id="updateUserById">
+        update user
+        set user_name       = #{userName,jdbcType=VARCHAR},
+            hashed_password = #{hashedPassword,jdbcType=VARCHAR},
+            is_active       = #{isActive,jdbcType=BOOLEAN},
+            create_time     = #{createTime,jdbcType=TIMESTAMP}
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <update id="updateUserSelectiveById" parameterType="shuhuai.wheremoney.entity.User">
+        update user
+        <set>
+            <if test="userName != null">
+                user_name = #{userName,jdbcType=VARCHAR},
+            </if>
+            <if test="hashedPassword != null">
+                hashed_password = #{hashedPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="isActive != null">
+                is_active = #{isActive,jdbcType=BOOLEAN},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <select id="selectUserByUserName" resultMap="UserResultMap">
+        select *
+        from user
+        where user_name = #{userName,jdbcType=VARCHAR}
+    </select>
+    <select id="selectUserByUserId" resultMap="UserResultMap">
+        select *
+        from user
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+</mapper>
