@@ -9,6 +9,7 @@
         <result column="amount" jdbcType="DECIMAL" javaType="BigDecimal" property="amount"/>
         <result column="bill_time" jdbcType="TIMESTAMP" javaType="java.sql.Timestamp" property="billTime"/>
         <result column="remark" jdbcType="VARCHAR" javaType="String" property="remark"/>
+        <result column="refunded" jdbcType="BOOLEAN" javaType="Boolean" property="refunded"/>
         <result column="image" property="image" typeHandler="org.apache.ibatis.type.BlobTypeHandler"/>
     </resultMap>
     <insert id="insertPayBillSelective" useGeneratedKeys="true" keyProperty="id"
@@ -33,6 +34,9 @@
             <if test="remark != null">
                 remark,
             </if>
+            <if test="refunded != null">
+                refunded,
+            </if>
             <if test="image != null">
                 image,
             </if>
@@ -56,11 +60,44 @@
             <if test="remark != null">
                 #{remark,jdbcType=VARCHAR},
             </if>
+            <if test="refunded != null">
+                #{refunded,jdbcType=BOOLEAN},
+            </if>
             <if test="image != null">
                 #{image,jdbcType=BLOB},
             </if>
         </trim>
     </insert>
+    <update id="updatePayBillByIdSelective">
+        update pay_bill
+        <set>
+            <if test="bookId != null">
+                book_id = #{bookId,jdbcType=INTEGER},
+            </if>
+            <if test="payAssetId != null">
+                pay_asset_id = #{payAssetId,jdbcType=INTEGER},
+            </if>
+            <if test="billCategoryId != null">
+                bill_category_id = #{billCategoryId,jdbcType=INTEGER},
+            </if>
+            <if test="amount != null">
+                amount = #{amount,jdbcType=DECIMAL},
+            </if>
+            <if test="billTime != null">
+                bill_time = #{billTime,jdbcType=DATE},
+            </if>
+            <if test="remark != null">
+                remark = #{remark,jdbcType=VARCHAR},
+            </if>
+            <if test="refunded != null">
+                refunded = #{refunded,jdbcType=BOOLEAN},
+            </if>
+            <if test="image != null">
+                image = #{image,jdbcType=BLOB},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
     <select id="selectPayBillByBookId" resultMap="PayBillResultMap">
         select *
         from pay_bill

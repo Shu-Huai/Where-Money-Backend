@@ -51,7 +51,7 @@ public class BillController extends BaseController {
     @ApiOperation(value = "新建账单")
     public Response<Object> addBill(@RequestParam Integer bookId, Integer inAssetId, Integer outAssetId, Integer payBillId,
                                     Integer billCategoryId, @RequestParam BillType type, @RequestParam BigDecimal amount, BigDecimal transferFee,
-                                    @RequestParam String time, String remark, MultipartFile file) {
+                                    @RequestParam String time, String remark, Boolean refunded, MultipartFile file) {
         boolean over = false;
         Timestamp formatDate = null;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -64,11 +64,11 @@ public class BillController extends BaseController {
             billService.addIncomeBill(bookId, inAssetId, billCategoryId, amount, formatDate, remark, file);
         }
         if (Objects.equals(type.getType(), "支出")) {
-            billService.addPayBill(bookId, outAssetId, billCategoryId, amount, formatDate, remark, file);
-            //Book book = bookService.getBook(bookId);
-            //if (book.getTotalBudget() != null) {
-                //budgetService.updateTotalBudgetByBook(bookId, book.getTotalBudget(), book.getUsedBudget().add(amount));
-            //}
+            billService.addPayBill(bookId, outAssetId, billCategoryId, amount, formatDate, remark, refunded, file);
+            Book book = bookService.getBook(bookId);
+            if (book.getTotalBudget() != null) {
+                budgetService.updateTotalBudgetByBook(bookId, book.getTotalBudget(), book.getUsedBudget().add(amount));
+            }
             Budget budget = budgetService.selectBudgetByCategoryId(billCategoryId);
             if (budget != null) {
                 budget.setUsed(budget.getUsed().add(amount));
@@ -84,6 +84,7 @@ public class BillController extends BaseController {
         }
         if (Objects.equals(type.getType(), "退款")) {
             billService.addRefundBill(bookId, payBillId, inAssetId, amount, formatDate, remark, file);
+            billService.updatePayBill(payBillId, null, null, null, null, null, null, true, null);
             Budget budget = budgetService.selectBudgetByCategoryId(billCategoryId);
             if (budget != null) {
                 budget.setUsed(budget.getUsed().subtract(amount));
@@ -156,7 +157,7 @@ public class BillController extends BaseController {
     private BaseGetBillResponse entityToResponse(BaseBill bill) {
         String[] strings = idToString(bill);
         if (bill instanceof PayBill) {
-            return new GetPayBillResponse(bill, strings[0], strings[1]);
+            return new GetPayBillResponse(bill, strings[0], strings[1], ((PayBill) bill).getRefunded());
         }
         if (bill instanceof IncomeBill) {
             return new GetIncomeBillResponse(bill, strings[0], strings[1]);

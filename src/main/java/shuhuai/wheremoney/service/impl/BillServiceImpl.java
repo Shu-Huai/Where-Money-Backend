@@ -10,6 +10,7 @@ import shuhuai.wheremoney.mapper.TransferBillMapper;
 import shuhuai.wheremoney.service.BillCategoryService;
 import shuhuai.wheremoney.service.BillService;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
+import shuhuai.wheremoney.service.excep.common.ServerException;
 import shuhuai.wheremoney.type.BillType;
 import shuhuai.wheremoney.utils.TimeComputer;
 
@@ -51,7 +52,7 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
-    public void addPayBill(Integer bookId, Integer payAssetId, Integer billCategoryId, BigDecimal amount, Timestamp time, String remark, MultipartFile file) {
+    public void addPayBill(Integer bookId, Integer payAssetId, Integer billCategoryId, BigDecimal amount, Timestamp time, String remark, Boolean refunded, MultipartFile file) {
         if (bookId == null || amount == null || payAssetId == null || billCategoryId == null) {
             throw new ParamsException("参数错误");
         }
@@ -63,7 +64,7 @@ public class BillServiceImpl implements BillService {
                 e.printStackTrace();
             }
         }
-        PayBill payBill = new PayBill(bookId, payAssetId, billCategoryId, amount, time, remark, fileBytes);
+        PayBill payBill = new PayBill(bookId, payAssetId, billCategoryId, amount, time, remark, false, fileBytes);
         payBillMapper.insertPayBillSelective(payBill);
     }
 
@@ -100,6 +101,26 @@ public class BillServiceImpl implements BillService {
         }
         TransferBill transferBill = new TransferBill(bookId, inAssetId, outAssetId, amount, transferFee, time, remark, fileBytes);
         transferBillMapper.insertTransferBillSelective(transferBill);
+    }
+
+    @Override
+    public void updatePayBill(Integer id, Integer bookId, Integer payAssetId, Integer billCategoryId, BigDecimal amount, Timestamp time, String remark, Boolean refuned,
+                              MultipartFile file) {
+        if (id == null) {
+            throw new ParamsException("参数错误");
+        }
+        byte[] fileBytes = null;
+        if (file != null) {
+            try {
+                fileBytes = file.getBytes();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        Integer result = payBillMapper.updatePayBillByIdSelective(new PayBill(id, bookId, payAssetId, billCategoryId, amount, time, remark, refuned, fileBytes));
+        if (result == 0) {
+            throw new ServerException("服务器错误");
+        }
     }
 
     @Override
