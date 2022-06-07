@@ -260,4 +260,26 @@ public class BillController extends BaseController {
         List<BillCategory> list = billCategoryService.getBillCategoriesByBook(bookId);
         return new Response<>(200, "获取成功", list);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 401, message = "token过期"),
+            @ApiResponse(code = 422, message = "参数错误"),
+    })
+    @RequestMapping(value = "/max-min-pay-time", method = RequestMethod.GET)
+    @ApiOperation(value = "获得最大最小支出时间")
+    public Response<MaxMinResponse> getMaxMinPayTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
+        Map<String, PayBill> result = billService.getMaxMinPayBill(bookId, startTime, endTime);
+        return new Response<>(200, "获得最大最小支出时间", new MaxMinResponse(result.get("max"), result.get("min")));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 401, message = "token过期"),
+            @ApiResponse(code = 422, message = "参数错误"),
+    })
+    @RequestMapping(value = "/max-min-income-time", method = RequestMethod.GET)
+    @ApiOperation(value = "获得最大最小支出时间")
+    public Response<MaxMinResponse> getMaxMinIncomeTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
+        Map<String, IncomeBill> result = billService.getMaxMinIncomeBill(bookId, startTime, endTime);
+        return new Response<>(200, "获得最大最小支出时间", new MaxMinResponse(result.get("max"), result.get("min")));
+    }
 }

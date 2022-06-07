@@ -80,4 +80,10 @@
         from refund_bill
         where id = #{id,jdbcType=INTEGER}
     </select>
+    <select id="selectRefundBillByPayBillId" resultMap="RefundBillResultMap">
+        select *
+        from refund_bill
+        where pay_bill_id = #{payBillId,jdbcType=INTEGER}
+        order by bill_time desc
+    </select>
 </mapper>

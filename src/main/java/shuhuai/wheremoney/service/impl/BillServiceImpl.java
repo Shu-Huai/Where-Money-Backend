@@ -277,4 +277,46 @@ public class BillServiceImpl implements BillService {
         }
         return result;
     }
+
+    @Override
+    public Map<String, PayBill> getMaxMinPayBill(Integer bookId, Timestamp startTime, Timestamp endTime) {
+        List<PayBill> payBills = payBillMapper.selectPayBillByBookIdTime(bookId, startTime, endTime);
+        PayBill max = payBills.get(0);
+        PayBill min = payBills.get(0);
+        boolean first = true;
+        for (PayBill payBill : payBills) {
+            if (payBill.getRefunded()) {
+                List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(payBill.getId());
+                BigDecimal refundAmount = refundBills.stream().map(RefundBill::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+                payBill.setAmount(payBill.getAmount().subtract(refundAmount));
+            }
+            if (first || payBill.getAmount().compareTo(BigDecimal.ZERO) > 0 && payBill.getAmount().compareTo(max.getAmount()) > 0) {
+                max = payBill;
+            }
+            if (first || payBill.getAmount().compareTo(BigDecimal.ZERO) > 0 && payBill.getAmount().compareTo(min.getAmount()) < 0) {
+                min = payBill;
+            }
+            first = false;
+        }
+        return new HashMap<>(Map.of("max", max, "min", min));
+    }
+
+    @Override
+    public Map<String, IncomeBill> getMaxMinIncomeBill(Integer bookId, Timestamp startTime, Timestamp endTime) {
+        if (bookId == null || startTime == null || endTime == null) {
+            throw new ParamsException("参数错误");
+        }
+        List<IncomeBill> incomeBills = incomeBillMapper.selectIncomeBillByBookIdTime(bookId, startTime, endTime);
+        IncomeBill max = incomeBills.get(0);
+        IncomeBill min = incomeBills.get(0);
+        for (IncomeBill incomeBill : incomeBills) {
+            if (incomeBill.getAmount().compareTo(max.getAmount()) > 0) {
+                max = incomeBill;
+            }
+            if (incomeBill.getAmount().compareTo(min.getAmount()) < 0) {
+                min = incomeBill;
+            }
+        }
+        return new HashMap<>(Map.of("max", max, "min", min));
+    }
 }

@@ -15,4 +15,6 @@ public interface RefundBillMapper {
     List<RefundBill> selectRefundBillByBookIdTime(Integer bookId, Timestamp startTime, Timestamp endTime);
 
     RefundBill selectRefundBillById(Integer id);
+
+    List<RefundBill> selectRefundBillByPayBillId(Integer payBillId);
 }

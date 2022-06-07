@@ -2,6 +2,8 @@ package shuhuai.wheremoney.service;
 
 import org.springframework.web.multipart.MultipartFile;
 import shuhuai.wheremoney.entity.BaseBill;
+import shuhuai.wheremoney.entity.IncomeBill;
+import shuhuai.wheremoney.entity.PayBill;
 import shuhuai.wheremoney.type.BillType;
 
 import java.math.BigDecimal;
@@ -38,4 +40,8 @@ public interface BillService {
     List<Map<String, Object>> getDayPayStatisticTime(Integer bookId, Timestamp startTime, Timestamp endTime);
 
     List<Map<String, Object>> getDayIncomeStatisticTime(Integer bookId, Timestamp startTime, Timestamp endTime);
+
+    Map<String, PayBill> getMaxMinPayBill(Integer bookId, Timestamp startTime, Timestamp endTime);
+
+    Map<String, IncomeBill> getMaxMinIncomeBill(Integer bookId, Timestamp startTime, Timestamp endTime);
 }
