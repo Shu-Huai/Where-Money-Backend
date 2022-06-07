@@ -133,22 +133,43 @@ public class BillController extends BaseController {
 
     private String[] idToString(BaseBill bill) {
         if (bill instanceof PayBill) {
-            String payAsset = assetService.getAsset(((PayBill) bill).getPayAssetId()).getAssetName();
-            String billCategory = billCategoryService.getBillCategory(((PayBill) bill).getBillCategoryId()).getBillCategoryName();
+            String payAsset = null;
+            String billCategory = null;
+            if (((PayBill) bill).getPayAssetId() != null) {
+                payAsset = assetService.getAsset(((PayBill) bill).getPayAssetId()).getAssetName();
+            }
+            if (((PayBill) bill).getBillCategoryId() != null) {
+                billCategory = billCategoryService.getBillCategory(((PayBill) bill).getBillCategoryId()).getBillCategoryName();
+            }
             return new String[]{payAsset, billCategory};
         }
         if (bill instanceof IncomeBill) {
-            String incomeAsset = assetService.getAsset(((IncomeBill) bill).getIncomeAssetId()).getAssetName();
-            String billCategory = billCategoryService.getBillCategory(((IncomeBill) bill).getBillCategoryId()).getBillCategoryName();
+            String incomeAsset = null;
+            String billCategory = null;
+            if (((IncomeBill) bill).getIncomeAssetId() != null) {
+                incomeAsset = assetService.getAsset(((IncomeBill) bill).getIncomeAssetId()).getAssetName();
+            }
+            if (((IncomeBill) bill).getBillCategoryId() != null) {
+                billCategory = billCategoryService.getBillCategory(((IncomeBill) bill).getBillCategoryId()).getBillCategoryName();
+            }
             return new String[]{incomeAsset, billCategory};
         }
         if (bill instanceof TransferBill) {
-            String inAsset = assetService.getAsset(((TransferBill) bill).getInAssetId()).getAssetName();
-            String outAsset = assetService.getAsset(((TransferBill) bill).getOutAssetId()).getAssetName();
+            String inAsset = null;
+            String outAsset = null;
+            if (((TransferBill) bill).getInAssetId() != null) {
+                inAsset = assetService.getAsset(((TransferBill) bill).getInAssetId()).getAssetName();
+            }
+            if (((TransferBill) bill).getOutAssetId() != null) {
+                outAsset = assetService.getAsset(((TransferBill) bill).getOutAssetId()).getAssetName();
+            }
             return new String[]{inAsset, outAsset};
         }
         if (bill instanceof RefundBill) {
-            String refundAsset = assetService.getAsset(((RefundBill) bill).getRefundAssetId()).getAssetName();
+            String refundAsset = null;
+            if (((RefundBill) bill).getRefundAssetId() != null) {
+                refundAsset = assetService.getAsset(((RefundBill) bill).getRefundAssetId()).getAssetName();
+            }
             return new String[]{refundAsset};
         }
         return null;
