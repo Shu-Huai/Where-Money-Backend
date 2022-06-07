@@ -51,8 +51,8 @@ public class BillServiceTest {
     @Test
     public void getMaxMinPayBill() throws ParseException {
         log.info("获取最大最小支出账单测试");
-        Timestamp beginTime = new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-05-01 00:00:00").getTime());
-        Timestamp endTime = new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-05-31 23:59:59").getTime());
+        Timestamp beginTime = new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-06-01 00:00:00").getTime());
+        Timestamp endTime = new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-06-01 00:00:00").getTime());
         Map<String, PayBill> result = billService.getMaxMinPayBill(23, beginTime, endTime);
         log.info(result.toString());
     }
