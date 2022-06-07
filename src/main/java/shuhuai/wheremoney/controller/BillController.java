@@ -269,7 +269,9 @@ public class BillController extends BaseController {
     @ApiOperation(value = "获得最大最小支出时间")
     public Response<MaxMinResponse> getMaxMinPayTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         Map<String, PayBill> result = billService.getMaxMinPayBill(bookId, startTime, endTime);
-        return new Response<>(200, "获得最大最小支出时间", new MaxMinResponse(result.get("max"), result.get("min")));
+        GetPayBillResponse max = (GetPayBillResponse) entityToResponse(result.get("max"));
+        GetPayBillResponse min = (GetPayBillResponse) entityToResponse(result.get("min"));
+        return new Response<>(200, "获得最大最小支出时间", new MaxMinResponse(max, min));
     }
 
     @ApiResponses(value = {
@@ -280,6 +282,8 @@ public class BillController extends BaseController {
     @ApiOperation(value = "获得最大最小支出时间")
     public Response<MaxMinResponse> getMaxMinIncomeTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         Map<String, IncomeBill> result = billService.getMaxMinIncomeBill(bookId, startTime, endTime);
-        return new Response<>(200, "获得最大最小支出时间", new MaxMinResponse(result.get("max"), result.get("min")));
+        GetIncomeBillResponse max = (GetIncomeBillResponse) entityToResponse(result.get("max"));
+        GetIncomeBillResponse min = (GetIncomeBillResponse) entityToResponse(result.get("min"));
+        return new Response<>(200, "获得最大最小支出时间", new MaxMinResponse(max, min));
     }
 }
