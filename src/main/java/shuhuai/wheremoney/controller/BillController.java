@@ -271,7 +271,7 @@ public class BillController extends BaseController {
         Map<String, PayBill> result = billService.getMaxMinPayBill(bookId, startTime, endTime);
         GetPayBillResponse max = (GetPayBillResponse) entityToResponse(result.get("max"));
         GetPayBillResponse min = (GetPayBillResponse) entityToResponse(result.get("min"));
-        return new Response<>(200, "获得最大最小支出时间", new MaxMinResponse(max, min));
+        return new Response<>(200, "获得最大最小支出时间成功", new MaxMinResponse(max, min));
     }
 
     @ApiResponses(value = {
@@ -279,11 +279,11 @@ public class BillController extends BaseController {
             @ApiResponse(code = 422, message = "参数错误"),
     })
     @RequestMapping(value = "/max-min-income-time", method = RequestMethod.GET)
-    @ApiOperation(value = "获得最大最小支出时间")
+    @ApiOperation(value = "获得最大最小收入时间")
     public Response<MaxMinResponse> getMaxMinIncomeTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         Map<String, IncomeBill> result = billService.getMaxMinIncomeBill(bookId, startTime, endTime);
         GetIncomeBillResponse max = (GetIncomeBillResponse) entityToResponse(result.get("max"));
         GetIncomeBillResponse min = (GetIncomeBillResponse) entityToResponse(result.get("min"));
-        return new Response<>(200, "获得最大最小支出时间", new MaxMinResponse(max, min));
+        return new Response<>(200, "获得最大最小收入时间成功", new MaxMinResponse(max, min));
     }
 }
