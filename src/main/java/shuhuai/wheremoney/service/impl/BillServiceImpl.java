@@ -290,10 +290,10 @@ public class BillServiceImpl implements BillService {
                 BigDecimal refundAmount = refundBills.stream().map(RefundBill::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
                 payBill.setAmount(payBill.getAmount().subtract(refundAmount));
             }
-            if (first || payBill.getAmount().compareTo(BigDecimal.ZERO) > 0 && payBill.getAmount().compareTo(max.getAmount()) > 0) {
+            if (payBill.getAmount().compareTo(BigDecimal.ZERO) > 0 && (first || payBill.getAmount().compareTo(max.getAmount()) > 0)) {
                 max = payBill;
             }
-            if (first || payBill.getAmount().compareTo(BigDecimal.ZERO) > 0 && payBill.getAmount().compareTo(min.getAmount()) < 0) {
+            if (payBill.getAmount().compareTo(BigDecimal.ZERO) > 0 && (first || payBill.getAmount().compareTo(min.getAmount()) < 0)) {
                 min = payBill;
             }
             first = false;
