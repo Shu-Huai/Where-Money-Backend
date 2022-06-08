@@ -307,4 +307,15 @@ public class BillController extends BaseController {
         GetIncomeBillResponse min = (GetIncomeBillResponse) entityToResponse(result.get("min"));
         return new Response<>(200, "获得最大最小收入时间成功", new MaxMinResponse(max, min));
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 401, message = "token过期"),
+            @ApiResponse(code = 422, message = "参数错误"),
+    })
+    @RequestMapping(value = "/bill-image", method = RequestMethod.GET)
+    @ApiOperation(value = "获得账单图片")
+    public Response<byte[]> getBillImage(@RequestParam Integer billId, @RequestParam BillType type) {
+        byte[] image = billService.getBillImage(billId, type);
+        return new Response<>(200, "获得账单图片成功", image);
+    }
 }

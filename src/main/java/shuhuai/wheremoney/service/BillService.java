@@ -44,4 +44,6 @@ public interface BillService {
     Map<String, PayBill> getMaxMinPayBill(Integer bookId, Timestamp startTime, Timestamp endTime);
 
     Map<String, IncomeBill> getMaxMinIncomeBill(Integer bookId, Timestamp startTime, Timestamp endTime);
+
+    byte[] getBillImage(Integer id, BillType type);
 }

@@ -286,8 +286,8 @@ public class BillServiceImpl implements BillService {
         List<PayBill> payBills = payBillMapper.selectPayBillByBookIdTime(bookId, startTime, endTime);
         if (payBills.isEmpty()) {
             return new HashMap<>(Map.of(
-                    "max", new PayBill(null,null,null,null,BigDecimal.ZERO,null,null,null,null),
-                    "min", new PayBill(null,null,null,null,BigDecimal.ZERO,null,null,null,null)));
+                    "max", new PayBill(null, null, null, null, BigDecimal.ZERO, null, null, null, null),
+                    "min", new PayBill(null, null, null, null, BigDecimal.ZERO, null, null, null, null)));
         }
         PayBill max = null;
         PayBill min = null;
@@ -315,8 +315,8 @@ public class BillServiceImpl implements BillService {
         List<IncomeBill> incomeBills = incomeBillMapper.selectIncomeBillByBookIdTime(bookId, startTime, endTime);
         if (incomeBills.isEmpty()) {
             return new HashMap<>(Map.of(
-                    "max", new IncomeBill(null,null,null,null,BigDecimal.ZERO,null,null,null),
-                    "min", new IncomeBill(null,null,null,null,BigDecimal.ZERO,null,null,null)));
+                    "max", new IncomeBill(null, null, null, null, BigDecimal.ZERO, null, null, null),
+                    "min", new IncomeBill(null, null, null, null, BigDecimal.ZERO, null, null, null)));
         }
         IncomeBill max = null;
         IncomeBill min = null;
@@ -329,5 +329,43 @@ public class BillServiceImpl implements BillService {
             }
         }
         return new HashMap<>(Map.of("max", max == null ? incomeBills.get(0) : max, "min", min == null ? incomeBills.get(0) : min));
+    }
+
+    @Override
+    public byte[] getBillImage(Integer id, BillType type) {
+        if (id == null || type == null) {
+            throw new ParamsException("参数错误");
+        }
+        switch (type) {
+            case 支出 -> {
+                PayBill payBill = payBillMapper.selectPayBillById(id);
+                if (payBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                return payBill.getImage();
+            }
+            case 收入 -> {
+                IncomeBill incomeBill = incomeBillMapper.selectIncomeBillById(id);
+                if (incomeBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                return incomeBill.getImage();
+            }
+            case 退款 -> {
+                RefundBill refundBill = refundBillMapper.selectRefundBillById(id);
+                if (refundBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                return refundBill.getImage();
+            }
+            case 转账 -> {
+                TransferBill transferBill = transferBillMapper.selectTransferBillById(id);
+                if (transferBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                return transferBill.getImage();
+            }
+            default -> throw new ParamsException("参数错误");
+        }
     }
 }
