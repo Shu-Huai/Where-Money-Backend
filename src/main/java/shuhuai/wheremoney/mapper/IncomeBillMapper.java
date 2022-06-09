@@ -10,6 +10,8 @@ import java.util.List;
 public interface IncomeBillMapper {
     void insertIncomeBillSelective(IncomeBill incomeBill);
 
+    Integer updateIncomeBillByIdSelective(IncomeBill incomeBill);
+
     List<IncomeBill> selectIncomeBillByBookId(Integer bookId);
 
     List<IncomeBill> selectIncomeBillByBookIdTime(Integer bookId, Timestamp startTime, Timestamp endTime);

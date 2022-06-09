@@ -68,6 +68,36 @@
             </if>
         </trim>
     </insert>
+    <update id="updateTransferBillByIdSelective" parameterType="shuhuai.wheremoney.entity.TransferBill">
+        update transfer_bill
+        <set>
+            <if test="bookId != null">
+                book_id = #{bookId,jdbcType=INTEGER},
+            </if>
+            <if test="inAssetId != null">
+                in_asset_id = #{inAssetId,jdbcType=INTEGER},
+            </if>
+            <if test="outAssetId != null">
+                out_asset_id = #{outAssetId,jdbcType=INTEGER},
+            </if>
+            <if test="amount != null">
+                amount = #{amount,jdbcType=DECIMAL},
+            </if>
+            <if test="transferFee != null">
+                transfer_fee = #{transferFee,jdbcType=DECIMAL},
+            </if>
+            <if test="billTime != null">
+                bill_time = #{billTime,jdbcType=DATE},
+            </if>
+            <if test="remark != null">
+                remark = #{remark,jdbcType=VARCHAR},
+            </if>
+            <if test="image != null">
+                image = #{image,jdbcType=BLOB},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
     <select id="selectTransferBillByBookId" resultMap="TransferBillResultMap">
         select *
         from transfer_bill

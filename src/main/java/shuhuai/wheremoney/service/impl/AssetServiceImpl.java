@@ -11,6 +11,7 @@ import shuhuai.wheremoney.service.BillService;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
 import shuhuai.wheremoney.service.excep.common.ServerException;
 import shuhuai.wheremoney.type.AssetType;
+import shuhuai.wheremoney.utils.BeanGetter;
 import shuhuai.wheremoney.utils.RedisConnector;
 import shuhuai.wheremoney.utils.TimeComputer;
 
@@ -33,9 +34,6 @@ public class AssetServiceImpl implements AssetService {
     private UserMapper userMapper;
     @Resource
     private BookMapper bookMapper;
-    @Resource
-    private BillService billService;
-
     @Resource
     private RedisConnector redisConnector;
 
@@ -100,7 +98,9 @@ public class AssetServiceImpl implements AssetService {
         List<Book> bookList = bookMapper.selectBookByUser(user);
         List<Map<String, Object>> result = new ArrayList<>();
         List<BaseBill> billTimeList = new ArrayList<>();
+        BillService billService = BeanGetter.getBean(BillService.class);
         for (Book book : bookList) {
+
             billTimeList.addAll(billService.getBillByBookTime(book.getId(), startTime, endTime));
         }
         Map<Timestamp, List<BaseBill>> billTimeMap = new HashMap<>();
@@ -137,5 +137,21 @@ public class AssetServiceImpl implements AssetService {
             }
         }
         return result;
+    }
+
+    @Override
+    public void changeBalanceRelative(Integer id, BigDecimal relativeValue) {
+        if (id == null || relativeValue == null) {
+            throw new ParamsException("参数错误");
+        }
+        Integer result = assetMapper.updateBalanceRelativeById(id, relativeValue);
+        if (result != 1) {
+            throw new ServerException("服务器错误");
+        }
+        if (redisConnector.existObject("asset:" + id)) {
+            Asset asset = (Asset) redisConnector.readObject("asset:" + id);
+            asset.setBalance(asset.getBalance().add(relativeValue));
+            redisConnector.writeObject("asset:" + id, asset, TimeComputer.dayToSecond(assetExpire));
+        }
     }
 }

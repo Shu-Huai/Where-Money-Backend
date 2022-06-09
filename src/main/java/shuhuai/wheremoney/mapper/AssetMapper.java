@@ -10,11 +10,13 @@ import java.util.List;
 public interface AssetMapper {
     Integer insertAssetSelective(Asset asset);
 
+    Integer updateAssetSelectiveById(Asset asset);
+
+    Integer updateBalanceRelativeById(Integer id, BigDecimal relativeValue);
+
     List<Asset> selectAssetByUserId(Integer userId);
 
     Asset selectAssetById(Integer id);
-
-    Integer updateAssetSelectiveById(Asset asset);
 
     BigDecimal selectTotalAssetByUserId(Integer userId);
 }

@@ -61,6 +61,33 @@
             </if>
         </trim>
     </insert>
+    <update id="updateIncomeBillByIdSelective" parameterType="shuhuai.wheremoney.entity.IncomeBill">
+        update income_bill
+        <set>
+            <if test="bookId != null">
+                book_id = #{bookId,jdbcType=INTEGER},
+            </if>
+            <if test="incomeAssetId != null">
+                income_asset_id = #{incomeAssetId,jdbcType=INTEGER},
+            </if>
+            <if test="billCategoryId != null">
+                bill_category_id = #{billCategoryId,jdbcType=INTEGER},
+            </if>
+            <if test="amount != null">
+                amount = #{amount,jdbcType=DECIMAL},
+            </if>
+            <if test="billTime != null">
+                bill_time = #{billTime,jdbcType=DATE},
+            </if>
+            <if test="remark != null">
+                remark = #{remark,jdbcType=VARCHAR},
+            </if>
+            <if test="image != null">
+                image = #{image,jdbcType=BLOB},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
     <select id="selectIncomeBillByBookId" resultMap="IncomeBillResultMap">
         select *
         from income_bill

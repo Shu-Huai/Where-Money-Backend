@@ -76,16 +76,6 @@
             </if>
         </trim>
     </insert>
-    <select id="selectAssetByUserId" resultMap="AssetResultMap">
-        select *
-        from asset
-        where user_id = #{userId,jdbcType=INTEGER}
-    </select>
-    <select id="selectAssetById" resultMap="AssetResultMap">
-        select *
-        from asset
-        where id = #{id,jdbcType=INTEGER}
-    </select>
     <update id="updateAssetSelectiveById" parameterType="shuhuai.wheremoney.entity.Asset">
         update asset
         <set>
@@ -119,6 +109,21 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    <update id="updateBalanceRelativeById">
+        update asset
+        set balance = balance + #{relativeValue,jdbcType=DECIMAL}
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <select id="selectAssetByUserId" resultMap="AssetResultMap">
+        select *
+        from asset
+        where user_id = #{userId,jdbcType=INTEGER}
+    </select>
+    <select id="selectAssetById" resultMap="AssetResultMap">
+        select *
+        from asset
+        where id = #{id,jdbcType=INTEGER}
+    </select>
     <select id="selectTotalAssetByUserId" resultType="java.math.BigDecimal">
         select sum(balance)
         from asset

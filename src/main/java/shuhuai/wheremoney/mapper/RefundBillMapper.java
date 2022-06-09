@@ -10,6 +10,10 @@ import java.util.List;
 public interface RefundBillMapper {
     void insertRefundBillSelective(RefundBill refundBill);
 
+    Integer deleteRefundBillById(Integer id);
+
+    Integer updateRefundBillByIdSelective(RefundBill refundBill);
+
     List<RefundBill> selectRefundBillByBookId(Integer bookId);
 
     List<RefundBill> selectRefundBillByBookIdTime(Integer bookId, Timestamp startTime, Timestamp endTime);

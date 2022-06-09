@@ -19,4 +19,6 @@ public interface AssetService {
     void updateAsset(Asset asset);
 
     List<Map<String, Object>> getDayStatisticTime(String userName, Timestamp startTime, Timestamp endTime);
+
+    void changeBalanceRelative(Integer id, BigDecimal relativeValue);
 }

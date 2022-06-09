@@ -10,6 +10,8 @@ import java.util.List;
 public interface TransferBillMapper {
     void insertTransferBillSelective(TransferBill transferBill);
 
+    Integer updateTransferBillByIdSelective(TransferBill transferBill);
+
     List<TransferBill> selectTransferBillByBookId(Integer bookId);
 
     List<TransferBill> selectTransferBillByBookIdTime(Integer bookId, Timestamp startTime, Timestamp endTime);

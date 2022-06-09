@@ -8,6 +8,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import shuhuai.wheremoney.utils.TimeComputer;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -47,5 +48,12 @@ public class AssetServiceTest {
             long end = System.currentTimeMillis();
             log.info("耗时: {}秒", (end - start) / 1000.0);
         }
+    }
+
+    @Test
+    public void changeBalanceRelativeTest() {
+        log.info("更改余额相对测试");
+        assetService.changeBalanceRelative(70, new BigDecimal(100));
+        log.info("更改余额相对测试完成");
     }
 }

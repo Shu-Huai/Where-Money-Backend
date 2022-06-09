@@ -8,8 +8,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 import shuhuai.wheremoney.entity.BaseBill;
 import shuhuai.wheremoney.entity.IncomeBill;
 import shuhuai.wheremoney.entity.PayBill;
+import shuhuai.wheremoney.type.BillType;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -64,5 +66,13 @@ public class BillServiceTest {
         Timestamp endTime = new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-05-31 23:59:59").getTime());
         Map<String, IncomeBill> result = billService.getMaxMinIncomeBill(23, beginTime, endTime);
         log.info(result.toString());
+    }
+
+    @Test
+    public void changeBillTest() {
+        log.info("修改账单测试");
+        billService.changeBill(125, null, new BigDecimal(300), null, null, null, 66, null, null,
+                BillType.支出, null, null, null);
+        log.info("修改成功");
     }
 }

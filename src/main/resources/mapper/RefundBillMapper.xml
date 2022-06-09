@@ -61,6 +61,38 @@
             </if>
         </trim>
     </insert>
+    <delete id="deleteRefundBillById" parameterType="Integer">
+        delete
+        from refund_bill
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
+    <update id="updateRefundBillByIdSelective" parameterType="shuhuai.wheremoney.entity.RefundBill">
+        update refund_bill
+        <set>
+            <if test="bookId != null">
+                book_id = #{bookId,jdbcType=INTEGER},
+            </if>
+            <if test="payBillId != null">
+                pay_bill_id = #{payBillId,jdbcType=INTEGER},
+            </if>
+            <if test="refundAssetId != null">
+                refund_asset_id = #{refundAssetId,jdbcType=INTEGER},
+            </if>
+            <if test="amount != null">
+                amount = #{amount,jdbcType=DECIMAL},
+            </if>
+            <if test="billTime != null">
+                bill_time = #{billTime,jdbcType=DATE},
+            </if>
+            <if test="remark != null">
+                remark = #{remark,jdbcType=VARCHAR},
+            </if>
+            <if test="image != null">
+                image = #{image,jdbcType=BLOB},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
     <select id="selectRefundBillByBookId" resultMap="RefundBillResultMap">
         select *
         from refund_bill
