@@ -10,6 +10,8 @@ import java.util.List;
 public interface IncomeBillMapper {
     void insertIncomeBillSelective(IncomeBill incomeBill);
 
+    Integer deleteIncomeBillById(Integer id);
+
     Integer updateIncomeBillByIdSelective(IncomeBill incomeBill);
 
     List<IncomeBill> selectIncomeBillByBookId(Integer bookId);

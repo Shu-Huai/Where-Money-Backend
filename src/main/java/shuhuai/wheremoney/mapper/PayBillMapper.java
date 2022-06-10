@@ -10,6 +10,8 @@ import java.util.List;
 public interface PayBillMapper {
     void insertPayBillSelective(PayBill payBill);
 
+    Integer deletePayBillById(Integer id);
+
     Integer updatePayBillByIdSelective(PayBill payBill);
 
     List<PayBill> selectPayBillByBookId(Integer bookId);

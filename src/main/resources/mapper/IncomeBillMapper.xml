@@ -61,6 +61,10 @@
             </if>
         </trim>
     </insert>
+    <delete id="deleteIncomeBillById" parameterType="Integer">
+        delete from income_bill
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
     <update id="updateIncomeBillByIdSelective" parameterType="shuhuai.wheremoney.entity.IncomeBill">
         update income_bill
         <set>

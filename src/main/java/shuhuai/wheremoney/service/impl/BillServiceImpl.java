@@ -398,15 +398,8 @@ public class BillServiceImpl implements BillService {
                     throw new ParamsException("参数错误");
                 } else if (newBill.getRefunded() != null && originBill.getRefunded() && !newBill.getRefunded()) {
                     List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(originBill.getId());
-                    if (refundBills.isEmpty()) {
-                        throw new ParamsException("参数错误");
-                    }
                     for (RefundBill refundBill : refundBills) {
-                        assetService.changeBalanceRelative(refundBill.getRefundAssetId(), refundBill.getAmount().negate());
-                        Integer result = refundBillMapper.deleteRefundBillById(refundBill.getId());
-                        if (result == 0) {
-                            throw new ServerException("服务器错误");
-                        }
+                        deleteBill(refundBill.getId(), BillType.退款);
                     }
                 }
                 if (newBill.getPayAssetId() != null && !Objects.equals(newBill.getPayAssetId(), originBill.getPayAssetId())) {
@@ -521,6 +514,60 @@ public class BillServiceImpl implements BillService {
                     }
                 }
                 Integer result = transferBillMapper.updateTransferBillByIdSelective(newBill);
+                if (result != 1) {
+                    throw new ServerException("服务器错误");
+                }
+            }
+        }
+    }
+
+    @Override
+    public void deleteBill(Integer id, BillType type) {
+        if (id == null || type == null) {
+            throw new ParamsException("参数错误");
+        }
+        switch (type) {
+            case 支出 -> {
+                PayBill payBill = (PayBill) getBill(id, type);
+                if (payBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                assetService.changeBalanceRelative(payBill.getPayAssetId(), payBill.getAmount());
+                Integer result = payBillMapper.deletePayBillById(id);
+                if (result != 1) {
+                    throw new ServerException("服务器错误");
+                }
+            }
+            case 收入 -> {
+                IncomeBill incomeBill = (IncomeBill) getBill(id, type);
+                if (incomeBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                assetService.changeBalanceRelative(incomeBill.getIncomeAssetId(), incomeBill.getAmount().negate());
+                Integer result = incomeBillMapper.deleteIncomeBillById(id);
+                if (result != 1) {
+                    throw new ServerException("服务器错误");
+                }
+            }
+            case 退款 -> {
+                RefundBill refundBill = (RefundBill) getBill(id, type);
+                if (refundBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                assetService.changeBalanceRelative(refundBill.getRefundAssetId(), refundBill.getAmount().negate());
+                Integer result = refundBillMapper.deleteRefundBillById(id);
+                if (result != 1) {
+                    throw new ServerException("服务器错误");
+                }
+            }
+            case 转账 -> {
+                TransferBill transferBill = (TransferBill) getBill(id, type);
+                if (transferBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                assetService.changeBalanceRelative(transferBill.getOutAssetId(), transferBill.getAmount());
+                assetService.changeBalanceRelative(transferBill.getInAssetId(), transferBill.getAmount().subtract(transferBill.getTransferFee()).negate());
+                Integer result = transferBillMapper.deleteTransferBillById(id);
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }

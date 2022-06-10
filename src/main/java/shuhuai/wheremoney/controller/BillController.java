@@ -325,10 +325,20 @@ public class BillController extends BaseController {
     })
     @RequestMapping(value = "/change-bill", method = RequestMethod.POST)
     @ApiOperation(value = "修改账单")
-    public Response<Object> changeBillImage(@RequestParam Integer id, Integer bookId, BigDecimal amount, Timestamp billTime, String remark, Integer inAssetId,
+    public Response<Object> changeBill(@RequestParam Integer id, Integer bookId, BigDecimal amount, Timestamp billTime, String remark, Integer inAssetId,
                                             Integer outAssetId, Integer billCategoryId, Boolean refunded, @RequestParam BillType type, MultipartFile file,
                                             Integer payBillId, BigDecimal transferFee) {
         billService.changeBill(id, bookId, amount, billTime, remark, inAssetId, outAssetId, billCategoryId, refunded, type, file, payBillId, transferFee);
+        return new Response<>(200, "修改账单成功", null);
+    }
+    @ApiResponses(value = {
+            @ApiResponse(code = 401, message = "token过期"),
+            @ApiResponse(code = 422, message = "参数错误"),
+    })
+    @RequestMapping(value = "/delete-bill", method = RequestMethod.POST)
+    @ApiOperation(value = "删除账单")
+    public Response<Object> deleteBill(@RequestParam Integer id, @RequestParam BillType type) {
+        billService.deleteBill(id, type);
         return new Response<>(200, "修改账单成功", null);
     }
 }

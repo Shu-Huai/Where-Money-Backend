@@ -49,4 +49,6 @@ public interface BillService {
 
     void changeBill(Integer id, Integer bookId, BigDecimal amount, Timestamp billTime, String remark, Integer inAssetId, Integer outAssetId,
                     Integer billCategoryId, Boolean refunded, BillType type, MultipartFile file, Integer payBillId, BigDecimal transferFee);
+
+    void deleteBill(Integer id, BillType type);
 }

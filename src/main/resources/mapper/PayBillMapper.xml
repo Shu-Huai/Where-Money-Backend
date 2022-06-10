@@ -68,6 +68,11 @@
             </if>
         </trim>
     </insert>
+    <delete id="deletePayBillById" parameterType="Integer">
+        delete
+        from pay_bill
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
     <update id="updatePayBillByIdSelective">
         update pay_bill
         <set>

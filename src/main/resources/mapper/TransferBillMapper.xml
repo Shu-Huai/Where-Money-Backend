@@ -68,6 +68,11 @@
             </if>
         </trim>
     </insert>
+    <delete id="deleteTransferBillById" parameterType="Integer">
+        delete
+        from transfer_bill
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
     <update id="updateTransferBillByIdSelective" parameterType="shuhuai.wheremoney.entity.TransferBill">
         update transfer_bill
         <set>
