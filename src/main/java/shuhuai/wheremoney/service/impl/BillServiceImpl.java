@@ -513,7 +513,6 @@ public class BillServiceImpl implements BillService {
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
-                writeToRedis("pay_bill:" + newBill.getId(), newBill);
             }
             case 收入 -> {
                 IncomeBill originBill = (IncomeBill) getBill(id, BillType.收入);
@@ -537,7 +536,6 @@ public class BillServiceImpl implements BillService {
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
-                writeToRedis("income_bill:" + newBill.getId(), newBill);
             }
             case 退款 -> {
                 RefundBill originBill = (RefundBill) getBill(id, BillType.退款);
@@ -564,7 +562,6 @@ public class BillServiceImpl implements BillService {
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
-                writeToRedis("refund_bill:" + newBill.getId(), newBill);
             }
             case 转账 -> {
                 TransferBill originBill = (TransferBill) getBill(id, BillType.转账);
@@ -615,7 +612,6 @@ public class BillServiceImpl implements BillService {
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
-                writeToRedis("transfer_bill:" + newBill.getId(), newBill);
             }
         }
     }
