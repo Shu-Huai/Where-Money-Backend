@@ -1,5 +1,6 @@
 package shuhuai.wheremoney.service.impl;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import shuhuai.wheremoney.entity.*;
@@ -7,12 +8,11 @@ import shuhuai.wheremoney.mapper.IncomeBillMapper;
 import shuhuai.wheremoney.mapper.PayBillMapper;
 import shuhuai.wheremoney.mapper.RefundBillMapper;
 import shuhuai.wheremoney.mapper.TransferBillMapper;
-import shuhuai.wheremoney.service.AssetService;
-import shuhuai.wheremoney.service.BillCategoryService;
-import shuhuai.wheremoney.service.BillService;
+import shuhuai.wheremoney.service.*;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
 import shuhuai.wheremoney.service.excep.common.ServerException;
 import shuhuai.wheremoney.type.BillType;
+import shuhuai.wheremoney.utils.RedisConnector;
 import shuhuai.wheremoney.utils.TimeComputer;
 
 import javax.annotation.Resource;
@@ -24,6 +24,8 @@ import java.util.*;
 
 @Service
 public class BillServiceImpl implements BillService {
+    @Value("${redis.bill.expire}")
+    private Long billExpire;
     @Resource
     private BillCategoryService billCategoryService;
     @Resource
@@ -36,6 +38,86 @@ public class BillServiceImpl implements BillService {
     private TransferBillMapper transferBillMapper;
     @Resource
     private RefundBillMapper refundBillMapper;
+    @Resource
+    private BudgetService budgetService;
+    @Resource
+    private BookService bookService;
+    @Resource
+    private RedisConnector redisConnector;
+
+    private void writeToRedis(String key, BaseBill bill) {
+        if (bill != null) {
+            bill.setImage(null);
+            redisConnector.writeObject(key, bill, TimeComputer.dayToSecond(billExpire));
+        }
+    }
+
+    @Override
+    public void addBill(Integer bookId, Integer inAssetId, Integer outAssetId, Integer payBillId, Integer billCategoryId,
+                        BillType type, BigDecimal amount, BigDecimal transferFee, Timestamp time, String remark, Boolean refunded, MultipartFile file) {
+        if (Objects.equals(type.getType(), "收入")) {
+            addIncomeBill(bookId, inAssetId, billCategoryId, amount, time, remark, file);
+        }
+        if (Objects.equals(type.getType(), "支出")) {
+            addPayBill(bookId, outAssetId, billCategoryId, amount, time, remark, refunded, file);
+            Book book = bookService.getBook(bookId);
+            if (book.getTotalBudget() != null) {
+                budgetService.updateTotalBudgetByBook(bookId, book.getTotalBudget(), book.getUsedBudget().add(amount));
+            }
+            Budget budget = budgetService.selectBudgetByCategoryId(billCategoryId);
+            if (budget != null) {
+                budget.setUsed(budget.getUsed().add(amount));
+                budget.setTimes(budget.getTimes() + 1);
+                budgetService.updateBudget(budget);
+            }
+        }
+        if (Objects.equals(type.getType(), "转账")) {
+            addTransferBill(bookId, inAssetId, outAssetId, amount, transferFee, time, remark, file);
+        }
+        if (Objects.equals(type.getType(), "退款")) {
+            addRefundBill(bookId, payBillId, inAssetId, amount, time, remark, file);
+            changeBill(payBillId, null, null, null, null, null, null, null,
+                    Boolean.TRUE, BillType.支出, null, null, null);
+            Budget budget = budgetService.selectBudgetByCategoryId(billCategoryId);
+            if (budget != null) {
+                budget.setUsed(budget.getUsed().subtract(amount));
+                budget.setTimes(budget.getTimes() - 1);
+                budgetService.updateBudget(budget);
+            }
+        }
+        if (inAssetId != null) {
+            Asset inAsset = assetService.getAsset(inAssetId);
+            int compare = amount.compareTo(new BigDecimal("0.00"));
+            if (compare < 0) {
+                amount = new BigDecimal("0.00").subtract(amount);
+            }// amount 负转正
+            inAsset.setBalance(inAsset.getBalance().add(amount)); //资产中更新
+            assetService.updateAsset(inAsset);
+        }
+        if (outAssetId != null) {
+            Asset outAsset = assetService.getAsset(outAssetId);
+            int compare = amount.compareTo(new BigDecimal("0.00"));
+            if (compare > 0) {
+                amount = new BigDecimal("0.00").subtract(amount);
+            }// amount 正转负
+            outAsset.setBalance(outAsset.getBalance().add(amount)); //资产中更新
+            if (Objects.equals(type.getType(), "转账")) {
+                int fee = transferFee.compareTo(new BigDecimal("0.00"));
+                if (fee > 0) {
+                    transferFee = new BigDecimal("0.00").subtract(transferFee);
+                }
+                outAsset.setBalance(outAsset.getBalance().add(transferFee)); //资产中更新手续费
+            }
+            if (transferFee != null) {
+                int fee = transferFee.compareTo(new BigDecimal("0.00"));
+                if (fee > 0) {
+                    transferFee = new BigDecimal("0.00").subtract(transferFee);
+                }
+                outAsset.setBalance(outAsset.getBalance().add(transferFee)); //资产中更新手续费
+            }
+            assetService.updateAsset(outAsset);
+        }
+    }
 
     @Override
     public void addIncomeBill(Integer bookId, Integer incomeAssetId, Integer billCategoryId, BigDecimal amount, Timestamp time, String remark, MultipartFile file) {
@@ -52,6 +134,7 @@ public class BillServiceImpl implements BillService {
         }
         IncomeBill incomeBill = new IncomeBill(bookId, incomeAssetId, billCategoryId, amount, time, remark, fileBytes);
         incomeBillMapper.insertIncomeBillSelective(incomeBill);
+        writeToRedis("income_bill:" + incomeBill.getId(), incomeBill);
     }
 
     @Override
@@ -69,6 +152,7 @@ public class BillServiceImpl implements BillService {
         }
         PayBill payBill = new PayBill(bookId, payAssetId, billCategoryId, amount, time, remark, false, fileBytes);
         payBillMapper.insertPayBillSelective(payBill);
+        writeToRedis("pay_bill:" + payBill.getId(), payBill);
     }
 
     @Override
@@ -86,6 +170,7 @@ public class BillServiceImpl implements BillService {
         }
         RefundBill refundBill = new RefundBill(bookId, payBillId, refundAssetId, amount, time, remark, fileBytes);
         refundBillMapper.insertRefundBillSelective(refundBill);
+        writeToRedis("refund_bill:" + refundBill.getId(), refundBill);
     }
 
     @Override
@@ -104,26 +189,7 @@ public class BillServiceImpl implements BillService {
         }
         TransferBill transferBill = new TransferBill(bookId, inAssetId, outAssetId, amount, transferFee, time, remark, fileBytes);
         transferBillMapper.insertTransferBillSelective(transferBill);
-    }
-
-    @Override
-    public void updatePayBill(Integer id, Integer bookId, Integer payAssetId, Integer billCategoryId, BigDecimal amount, Timestamp time, String remark, Boolean refuned,
-                              MultipartFile file) {
-        if (id == null) {
-            throw new ParamsException("参数错误");
-        }
-        byte[] fileBytes = null;
-        if (file != null) {
-            try {
-                fileBytes = file.getBytes();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        Integer result = payBillMapper.updatePayBillByIdSelective(new PayBill(id, bookId, payAssetId, billCategoryId, amount, time, remark, refuned, fileBytes));
-        if (result == 0) {
-            throw new ServerException("服务器错误");
-        }
+        writeToRedis("transfer_bill:" + transferBill.getId(), transferBill);
     }
 
     @Override
@@ -159,12 +225,41 @@ public class BillServiceImpl implements BillService {
         if (id == null || type == null) {
             throw new ParamsException("参数错误");
         }
-        return switch (type) {
-            case 支出 -> payBillMapper.selectPayBillById(id);
-            case 收入 -> incomeBillMapper.selectIncomeBillById(id);
-            case 转账 -> transferBillMapper.selectTransferBillById(id);
-            case 退款 -> refundBillMapper.selectRefundBillById(id);
-        };
+        switch (type) {
+            case 支出 -> {
+                if (redisConnector.existObject("pay_bill:" + id)) {
+                    return (PayBill) redisConnector.readObject("pay_bill:" + id);
+                }
+                PayBill payBill = payBillMapper.selectPayBillById(id);
+                writeToRedis("pay_bill:" + id, payBill);
+                return payBill;
+            }
+            case 收入 -> {
+                if (redisConnector.existObject("income_bill:" + id)) {
+                    return (IncomeBill) redisConnector.readObject("income_bill:" + id);
+                }
+                IncomeBill incomeBill = incomeBillMapper.selectIncomeBillById(id);
+                writeToRedis("income_bill:" + id, incomeBill);
+                return incomeBill;
+            }
+            case 转账 -> {
+                if (redisConnector.existObject("transfer_bill:" + id)) {
+                    return (TransferBill) redisConnector.readObject("transfer_bill:" + id);
+                }
+                TransferBill transferBill = transferBillMapper.selectTransferBillById(id);
+                writeToRedis("transfer_bill:" + id, transferBill);
+                return transferBill;
+            }
+            case 退款 -> {
+                if (redisConnector.existObject("refund_bill:" + id)) {
+                    return (RefundBill) redisConnector.readObject("refund_bill:" + id);
+                }
+                RefundBill refundBill = refundBillMapper.selectRefundBillById(id);
+                writeToRedis("refund_bill:" + id, refundBill);
+                return refundBill;
+            }
+            default -> throw new ParamsException("参数错误");
+        }
     }
 
     private Map<Integer, BigDecimal> statisticRefund(List<RefundBill> refundBills) {
@@ -389,7 +484,7 @@ public class BillServiceImpl implements BillService {
         }
         switch (type) {
             case 支出 -> {
-                PayBill originBill = payBillMapper.selectPayBillById(id);
+                PayBill originBill = (PayBill) getBill(id, BillType.支出);
                 if (originBill == null) {
                     throw new ParamsException("参数错误");
                 }
@@ -399,7 +494,7 @@ public class BillServiceImpl implements BillService {
                 } else if (newBill.getRefunded() != null && originBill.getRefunded() && !newBill.getRefunded()) {
                     List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(originBill.getId());
                     for (RefundBill refundBill : refundBills) {
-                        deleteBill(refundBill.getId(), BillType.退款);
+                        deleteBill(refundBill);
                     }
                 }
                 if (newBill.getPayAssetId() != null && !Objects.equals(newBill.getPayAssetId(), originBill.getPayAssetId())) {
@@ -418,9 +513,10 @@ public class BillServiceImpl implements BillService {
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
+                writeToRedis("pay_bill" + newBill.getId(), newBill);
             }
             case 收入 -> {
-                IncomeBill originBill = incomeBillMapper.selectIncomeBillById(id);
+                IncomeBill originBill = (IncomeBill) getBill(id, BillType.收入);
                 if (originBill == null) {
                     throw new ParamsException("参数错误");
                 }
@@ -441,9 +537,10 @@ public class BillServiceImpl implements BillService {
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
+                writeToRedis("income_bill" + newBill.getId(), newBill);
             }
             case 退款 -> {
-                RefundBill originBill = refundBillMapper.selectRefundBillById(id);
+                RefundBill originBill = (RefundBill) getBill(id, BillType.退款);
                 if (originBill == null) {
                     throw new ParamsException("参数错误");
                 }
@@ -467,9 +564,10 @@ public class BillServiceImpl implements BillService {
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
+                writeToRedis("refund_bill" + newBill.getId(), newBill);
             }
             case 转账 -> {
-                TransferBill originBill = transferBillMapper.selectTransferBillById(id);
+                TransferBill originBill = (TransferBill) getBill(id, BillType.转账);
                 if (originBill == null) {
                     throw new ParamsException("参数错误");
                 }
@@ -517,9 +615,50 @@ public class BillServiceImpl implements BillService {
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
+                writeToRedis("transfer_bill" + newBill.getId(), newBill);
             }
         }
     }
+
+    private void deleteBill(BaseBill bill) {
+        Integer result = 0;
+        if (bill instanceof PayBill payBill) {
+            assetService.changeBalanceRelative(payBill.getPayAssetId(), payBill.getAmount());
+            if (payBill.getRefunded()) {
+                List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(payBill.getId());
+                for (RefundBill refundBill : refundBills) {
+                    deleteBill(refundBill);
+                }
+            }
+            result = payBillMapper.deletePayBillById(payBill.getId());
+            if (redisConnector.existObject("pay_bill:" + payBill.getId())) {
+                redisConnector.deleteObject("pay_bill:" + payBill.getId());
+            }
+        } else if (bill instanceof IncomeBill incomeBill) {
+            assetService.changeBalanceRelative(incomeBill.getIncomeAssetId(), incomeBill.getAmount().negate());
+            result = incomeBillMapper.deleteIncomeBillById(incomeBill.getId());
+            if (redisConnector.existObject("income_bill:" + incomeBill.getId())) {
+                redisConnector.deleteObject("income_bill:" + incomeBill.getId());
+            }
+        } else if (bill instanceof TransferBill transferBill) {
+            assetService.changeBalanceRelative(transferBill.getOutAssetId(), transferBill.getAmount());
+            assetService.changeBalanceRelative(transferBill.getInAssetId(), transferBill.getAmount().subtract(transferBill.getTransferFee()).negate());
+            result = transferBillMapper.deleteTransferBillById(transferBill.getId());
+            if (redisConnector.existObject("transfer_bill:" + transferBill.getId())) {
+                redisConnector.deleteObject("transfer_bill:" + transferBill.getId());
+            }
+        } else if (bill instanceof RefundBill refundBill) {
+            assetService.changeBalanceRelative(refundBill.getRefundAssetId(), refundBill.getAmount().negate());
+            result = refundBillMapper.deleteRefundBillById(refundBill.getId());
+            if (redisConnector.existObject("refund_bill:" + refundBill.getId())) {
+                redisConnector.deleteObject("refund_bill:" + refundBill.getId());
+            }
+        }
+        if (result != 1) {
+            throw new ServerException("服务器错误");
+        }
+    }
+
 
     @Override
     public void deleteBill(Integer id, BillType type) {
@@ -532,45 +671,28 @@ public class BillServiceImpl implements BillService {
                 if (payBill == null) {
                     throw new ParamsException("参数错误");
                 }
-                assetService.changeBalanceRelative(payBill.getPayAssetId(), payBill.getAmount());
-                Integer result = payBillMapper.deletePayBillById(id);
-                if (result != 1) {
-                    throw new ServerException("服务器错误");
-                }
+                deleteBill(payBill);
             }
             case 收入 -> {
                 IncomeBill incomeBill = (IncomeBill) getBill(id, type);
                 if (incomeBill == null) {
                     throw new ParamsException("参数错误");
                 }
-                assetService.changeBalanceRelative(incomeBill.getIncomeAssetId(), incomeBill.getAmount().negate());
-                Integer result = incomeBillMapper.deleteIncomeBillById(id);
-                if (result != 1) {
-                    throw new ServerException("服务器错误");
-                }
+                deleteBill(incomeBill);
             }
             case 退款 -> {
                 RefundBill refundBill = (RefundBill) getBill(id, type);
                 if (refundBill == null) {
                     throw new ParamsException("参数错误");
                 }
-                assetService.changeBalanceRelative(refundBill.getRefundAssetId(), refundBill.getAmount().negate());
-                Integer result = refundBillMapper.deleteRefundBillById(id);
-                if (result != 1) {
-                    throw new ServerException("服务器错误");
-                }
+                deleteBill(refundBill);
             }
             case 转账 -> {
                 TransferBill transferBill = (TransferBill) getBill(id, type);
                 if (transferBill == null) {
                     throw new ParamsException("参数错误");
                 }
-                assetService.changeBalanceRelative(transferBill.getOutAssetId(), transferBill.getAmount());
-                assetService.changeBalanceRelative(transferBill.getInAssetId(), transferBill.getAmount().subtract(transferBill.getTransferFee()).negate());
-                Integer result = transferBillMapper.deleteTransferBillById(id);
-                if (result != 1) {
-                    throw new ServerException("服务器错误");
-                }
+                deleteBill(transferBill);
             }
         }
     }

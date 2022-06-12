@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+import shuhuai.wheremoney.entity.Asset;
 import shuhuai.wheremoney.utils.TimeComputer;
 
 import javax.annotation.Resource;
@@ -25,6 +26,13 @@ public class AssetServiceTest {
     @Test
     public void compileTest() {
         log.info("编译测试");
+    }
+
+    @Test
+    public void getAssetTest() {
+        log.info("获取资产测试");
+        Asset asset = assetService.getAsset(11);
+        log.info(asset.toString());
     }
 
     @Test

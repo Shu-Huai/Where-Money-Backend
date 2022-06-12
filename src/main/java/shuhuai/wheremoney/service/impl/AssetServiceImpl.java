@@ -26,7 +26,7 @@ import java.util.Map;
 @Service
 
 public class AssetServiceImpl implements AssetService {
-    @Value("${redis.billCategory.expire}")
+    @Value("${redis.asset.expire}")
     private Long assetExpire;
     @Resource
     private AssetMapper assetMapper;

@@ -19,12 +19,9 @@ import shuhuai.wheremoney.type.BillType;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/bill")
@@ -37,10 +34,6 @@ public class BillController extends BaseController {
     private AssetService assetService;
     @Resource
     private BillCategoryService billCategoryService;
-    @Resource
-    private BudgetService budgetService;
-    @Resource
-    private BookService bookService;
 
     @ApiResponses(value = {
             @ApiResponse(code = 401, message = "token过期"),
@@ -51,83 +44,8 @@ public class BillController extends BaseController {
     @ApiOperation(value = "新建账单")
     public Response<Object> addBill(@RequestParam Integer bookId, Integer inAssetId, Integer outAssetId, Integer payBillId,
                                     Integer billCategoryId, @RequestParam BillType type, @RequestParam BigDecimal amount, BigDecimal transferFee,
-                                    @RequestParam String time, String remark, Boolean refunded, MultipartFile file) {
-        boolean over = false;
-        Timestamp formatDate = null;
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        try {
-            formatDate = Timestamp.valueOf(sdf.format(sdf.parse(time)));
-        } catch (ParseException error) {
-            error.printStackTrace();
-        }
-        if (Objects.equals(type.getType(), "收入")) {
-            billService.addIncomeBill(bookId, inAssetId, billCategoryId, amount, formatDate, remark, file);
-        }
-        if (Objects.equals(type.getType(), "支出")) {
-            billService.addPayBill(bookId, outAssetId, billCategoryId, amount, formatDate, remark, refunded, file);
-            Book book = bookService.getBook(bookId);
-            if (book.getTotalBudget() != null) {
-                budgetService.updateTotalBudgetByBook(bookId, book.getTotalBudget(), book.getUsedBudget().add(amount));
-            }
-            Budget budget = budgetService.selectBudgetByCategoryId(billCategoryId);
-            if (budget != null) {
-                budget.setUsed(budget.getUsed().add(amount));
-                budget.setTimes(budget.getTimes() + 1);
-                budgetService.updateBudget(budget);
-                if (budget.getUsed().add(amount).compareTo(budget.getLimit()) > 0) {
-                    over = true;
-                }
-            }
-        }
-        if (Objects.equals(type.getType(), "转账")) {
-            billService.addTransferBill(bookId, inAssetId, outAssetId, amount, transferFee, formatDate, remark, file);
-        }
-        if (Objects.equals(type.getType(), "退款")) {
-            billService.addRefundBill(bookId, payBillId, inAssetId, amount, formatDate, remark, file);
-            billService.updatePayBill(payBillId, null, null, null, null, null, null, true, null);
-            Budget budget = budgetService.selectBudgetByCategoryId(billCategoryId);
-            if (budget != null) {
-                budget.setUsed(budget.getUsed().subtract(amount));
-                budget.setTimes(budget.getTimes() - 1);
-                budgetService.updateBudget(budget);
-            }
-        }
-        if (inAssetId != null) {
-            Asset inAsset = assetService.getAsset(inAssetId);
-            int compare = amount.compareTo(new BigDecimal("0.00"));
-            if (compare < 0) {
-                amount = new BigDecimal("0.00").subtract(amount);
-            }// amount 负转正
-            inAsset.setBalance(inAsset.getBalance().add(amount)); //资产中更新
-            assetService.updateAsset(inAsset);
-        }
-        if (outAssetId != null) {
-            Asset outAsset = assetService.getAsset(outAssetId);
-            int compare = amount.compareTo(new BigDecimal("0.00"));
-            if (compare > 0) {
-                amount = new BigDecimal("0.00").subtract(amount);
-            }// amount 正转负
-            outAsset.setBalance(outAsset.getBalance().add(amount)); //资产中更新
-            if (Objects.equals(type.getType(), "转账")) {
-                int fee = transferFee.compareTo(new BigDecimal("0.00"));
-                if (fee > 0) {
-                    transferFee = new BigDecimal("0.00").subtract(transferFee);
-                }
-
-                outAsset.setBalance(outAsset.getBalance().add(transferFee)); //资产中更新手续费
-            }
-            if (transferFee != null) {
-                int fee = transferFee.compareTo(new BigDecimal("0.00"));
-                if (fee > 0) {
-                    transferFee = new BigDecimal("0.00").subtract(transferFee);
-                }
-                outAsset.setBalance(outAsset.getBalance().add(transferFee)); //资产中更新手续费
-            }
-            assetService.updateAsset(outAsset);
-        }
-        if (over) {
-            return new Response<>(200, "新建账单成功,超出该种类预算", null);
-        }
+                                    @RequestParam Timestamp time, String remark, Boolean refunded, MultipartFile file) {
+        billService.addBill(bookId, inAssetId, outAssetId, payBillId, billCategoryId, type, amount, transferFee, time, remark, refunded, file);
         return new Response<>(200, "新建账单成功", null);
     }
 
@@ -326,11 +244,12 @@ public class BillController extends BaseController {
     @RequestMapping(value = "/change-bill", method = RequestMethod.POST)
     @ApiOperation(value = "修改账单")
     public Response<Object> changeBill(@RequestParam Integer id, Integer bookId, BigDecimal amount, Timestamp billTime, String remark, Integer inAssetId,
-                                            Integer outAssetId, Integer billCategoryId, Boolean refunded, @RequestParam BillType type, MultipartFile file,
-                                            Integer payBillId, BigDecimal transferFee) {
+                                       Integer outAssetId, Integer billCategoryId, Boolean refunded, @RequestParam BillType type, MultipartFile file,
+                                       Integer payBillId, BigDecimal transferFee) {
         billService.changeBill(id, bookId, amount, billTime, remark, inAssetId, outAssetId, billCategoryId, refunded, type, file, payBillId, transferFee);
         return new Response<>(200, "修改账单成功", null);
     }
+
     @ApiResponses(value = {
             @ApiResponse(code = 401, message = "token过期"),
             @ApiResponse(code = 422, message = "参数错误"),

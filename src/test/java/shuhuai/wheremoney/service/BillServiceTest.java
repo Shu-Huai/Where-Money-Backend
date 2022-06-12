@@ -31,12 +31,19 @@ public class BillServiceTest {
     }
 
     @Test
-    public void getBillTest() {
+    public void getBillByBookTest() {
         log.info("获取账单测试");
         List<BaseBill> bills = billService.getBillByBook(23);
         for (BaseBill bill : bills) {
             log.info(bill.toString());
         }
+    }
+
+    @Test
+    public void getBillTest() {
+        log.info("获取账单测试");
+        PayBill bill = (PayBill) billService.getBill(166, BillType.支出);
+        log.info(bill.toString());
     }
 
     @Test

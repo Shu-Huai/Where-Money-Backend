@@ -2,7 +2,6 @@ package shuhuai.wheremoney.service.impl;
 
 import org.springframework.stereotype.Service;
 import shuhuai.wheremoney.entity.Budget;
-import shuhuai.wheremoney.mapper.BookMapper;
 import shuhuai.wheremoney.mapper.BudgetMapper;
 import shuhuai.wheremoney.service.BudgetService;
 
@@ -14,8 +13,6 @@ import java.util.List;
 public class BudgetServiceImpl implements BudgetService {
     @Resource
     private BudgetMapper budgetMapper;
-    @Resource
-    private BookMapper bookMapper;
 
     @Override
     public void addBudget(Integer bookId, Integer billCategoryId, BigDecimal limit) {
