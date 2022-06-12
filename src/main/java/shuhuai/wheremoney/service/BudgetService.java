@@ -19,4 +19,10 @@ public interface BudgetService {
     void updateTotalBudgetByBook(Integer bookId, BigDecimal totalBudget, BigDecimal usedBudget);
 
     Budget selectBudgetByCategoryId(Integer billCategoryId);
+
+    void changeTotalUsedBudgetRelative(Integer id, BigDecimal relativeValue);
+
+    void changeCategoryUsedBudgetRelative(Integer billCategoryId, BigDecimal relativeValue);
+
+    void changeCategoryTimesRelative(Integer billCategoryId, Integer relativeValue);
 }

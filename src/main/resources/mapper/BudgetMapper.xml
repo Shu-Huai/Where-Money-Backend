@@ -35,6 +35,20 @@
             </if>
         </trim>
     </insert>
+    <update id="updateUsedRelativeByCategoryId">
+        update budget
+        <set>
+            used = used + #{relativeValue,jdbcType=DECIMAL}
+        </set>
+        where bill_category_id = #{billCategoryId,jdbcType=INTEGER}
+    </update>
+    <update id="updateTimesRelativeByCategoryId">
+        update budget
+        <set>
+            times = times + #{relativeValue,jdbcType=INTEGER}
+        </set>
+        where bill_category_id = #{billCategoryId,jdbcType=INTEGER}
+    </update>
     <select id="selectBudgetsByBook"
             resultMap="BudgetResultMap">
         select *
@@ -53,24 +67,6 @@
         from budget
         where bill_category_id = #{billCategoryId,jdbcType=INTEGER}
     </select>
-    <select id="selectTotalBudgetByBook"
-            resultType="java.math.BigDecimal">
-        select total_budget
-        from book
-        where id = #{id,jdbcType=INTEGER}
-    </select>
-    <update id="updateTotalBudgetByBook">
-        update book
-        <set>
-            <if test="totalBudget != null">
-                total_budget = #{totalBudget,jdbcType=DECIMAL},
-            </if>
-            <if test="usedBudget != null">
-                used_budget = #{usedBudget,jdbcType=DECIMAL},
-            </if>
-        </set>
-        where id = #{id,jdbcType=INTEGER}
-    </update>
     <update id="updateBudgetById" parameterType="shuhuai.wheremoney.entity.Budget">
         update budget
         <set>

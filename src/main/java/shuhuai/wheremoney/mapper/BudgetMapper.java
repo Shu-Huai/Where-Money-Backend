@@ -10,16 +10,15 @@ import java.util.List;
 public interface BudgetMapper {
     void insertBudget(Budget budget);
 
+    Integer updateUsedRelativeByCategoryId(Integer billCategoryId, BigDecimal relativeValue);
+
+    Integer updateTimesRelativeByCategoryId(Integer billCategoryId, Integer relativeValue);
+
     List<Budget> selectBudgetsByBook(Integer bookId);
 
     Budget selectBudgetById(Integer id);
 
-    BigDecimal selectTotalBudgetByBook(Integer id);
-
-    void updateTotalBudgetByBook(Integer id, BigDecimal totalBudget, BigDecimal usedBudget);
-
     void updateBudgetById(Budget budget);
 
     Budget selectBudgetByCategoryId(Integer categoryId);
-
 }

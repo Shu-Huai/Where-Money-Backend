@@ -12,6 +12,12 @@ import java.util.List;
 public interface BookMapper {
     Integer insertBookSelective(Book book);
 
+    BigDecimal selectTotalBudgetByBook(Integer id);
+
+    void updateTotalBudgetByBook(Integer id, BigDecimal totalBudget, BigDecimal usedBudget);
+
+    Integer updateUsedBudgetRelativeById(Integer id, BigDecimal relativeValue);
+
     Book selectBookById(Integer id);
 
     List<Book> selectBookByUser(User user);

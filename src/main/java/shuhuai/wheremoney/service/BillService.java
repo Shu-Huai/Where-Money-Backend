@@ -15,18 +15,6 @@ public interface BillService {
     void addBill(Integer bookId, Integer inAssetId, Integer outAssetId, Integer payBillId, Integer billCategoryId,
                  BillType type, BigDecimal amount, BigDecimal transferFee, Timestamp time, String remark, Boolean refunded, MultipartFile file);
 
-    void addIncomeBill(Integer bookId, Integer incomeAssetId, Integer billCategoryId, BigDecimal amount, Timestamp time, String remark,
-                       MultipartFile file);
-
-    void addPayBill(Integer bookId, Integer payAssetId, Integer billCategoryId, BigDecimal amount, Timestamp time, String remark, Boolean refunded,
-                    MultipartFile file);
-
-    void addRefundBill(Integer bookId, Integer payBillId, Integer refundAssetId, BigDecimal amount, Timestamp time, String remark,
-                       MultipartFile file);
-
-    void addTransferBill(Integer bookId, Integer inAssetId, Integer outAssetId, BigDecimal amount, BigDecimal transferFee, Timestamp time, String remark,
-                         MultipartFile file);
-
     List<BaseBill> getBillByBook(Integer bookId);
 
     List<BaseBill> getBillByBookTime(Integer bookId, Timestamp startTime, Timestamp endTime);

@@ -41,8 +41,6 @@ public class BillServiceImpl implements BillService {
     @Resource
     private BudgetService budgetService;
     @Resource
-    private BookService bookService;
-    @Resource
     private RedisConnector redisConnector;
 
     private void writeToRedis(String key, BaseBill bill) {
@@ -55,141 +53,61 @@ public class BillServiceImpl implements BillService {
     @Override
     public void addBill(Integer bookId, Integer inAssetId, Integer outAssetId, Integer payBillId, Integer billCategoryId,
                         BillType type, BigDecimal amount, BigDecimal transferFee, Timestamp time, String remark, Boolean refunded, MultipartFile file) {
-        if (Objects.equals(type.getType(), "收入")) {
-            addIncomeBill(bookId, inAssetId, billCategoryId, amount, time, remark, file);
-        }
-        if (Objects.equals(type.getType(), "支出")) {
-            addPayBill(bookId, outAssetId, billCategoryId, amount, time, remark, refunded, file);
-            Book book = bookService.getBook(bookId);
-            if (book.getTotalBudget() != null) {
-                budgetService.updateTotalBudgetByBook(bookId, book.getTotalBudget(), book.getUsedBudget().add(amount));
-            }
-            Budget budget = budgetService.selectBudgetByCategoryId(billCategoryId);
-            if (budget != null) {
-                budget.setUsed(budget.getUsed().add(amount));
-                budget.setTimes(budget.getTimes() + 1);
-                budgetService.updateBudget(budget);
+        byte[] fileBytes = null;
+        if (file != null) {
+            try {
+                fileBytes = file.getBytes();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
-        if (Objects.equals(type.getType(), "转账")) {
-            addTransferBill(bookId, inAssetId, outAssetId, amount, transferFee, time, remark, file);
-        }
-        if (Objects.equals(type.getType(), "退款")) {
-            addRefundBill(bookId, payBillId, inAssetId, amount, time, remark, file);
-            changeBill(payBillId, null, null, null, null, null, null, null,
-                    Boolean.TRUE, BillType.支出, null, null, null);
-            Budget budget = budgetService.selectBudgetByCategoryId(billCategoryId);
-            if (budget != null) {
-                budget.setUsed(budget.getUsed().subtract(amount));
-                budget.setTimes(budget.getTimes() - 1);
-                budgetService.updateBudget(budget);
-            }
-        }
-        if (inAssetId != null) {
-            Asset inAsset = assetService.getAsset(inAssetId);
-            int compare = amount.compareTo(new BigDecimal("0.00"));
-            if (compare < 0) {
-                amount = new BigDecimal("0.00").subtract(amount);
-            }// amount 负转正
-            inAsset.setBalance(inAsset.getBalance().add(amount)); //资产中更新
-            assetService.updateAsset(inAsset);
-        }
-        if (outAssetId != null) {
-            Asset outAsset = assetService.getAsset(outAssetId);
-            int compare = amount.compareTo(new BigDecimal("0.00"));
-            if (compare > 0) {
-                amount = new BigDecimal("0.00").subtract(amount);
-            }// amount 正转负
-            outAsset.setBalance(outAsset.getBalance().add(amount)); //资产中更新
-            if (Objects.equals(type.getType(), "转账")) {
-                int fee = transferFee.compareTo(new BigDecimal("0.00"));
-                if (fee > 0) {
-                    transferFee = new BigDecimal("0.00").subtract(transferFee);
+        switch (type) {
+            case 支出 -> {
+                if (bookId == null || amount == null || outAssetId == null || billCategoryId == null) {
+                    throw new ParamsException("参数错误");
                 }
-                outAsset.setBalance(outAsset.getBalance().add(transferFee)); //资产中更新手续费
+                budgetService.changeTotalUsedBudgetRelative(bookId, amount);
+                budgetService.changeCategoryUsedBudgetRelative(billCategoryId, amount);
+                budgetService.changeCategoryTimesRelative(billCategoryId, 1);
+                PayBill payBill = new PayBill(bookId, outAssetId, billCategoryId, amount, time, remark, false, fileBytes);
+                assetService.changeBalanceRelative(outAssetId, amount.negate());
+                payBillMapper.insertPayBillSelective(payBill);
+                writeToRedis("pay_bill:" + payBill.getId(), payBill);
             }
-            if (transferFee != null) {
-                int fee = transferFee.compareTo(new BigDecimal("0.00"));
-                if (fee > 0) {
-                    transferFee = new BigDecimal("0.00").subtract(transferFee);
+            case 收入 -> {
+                if (bookId == null || amount == null || inAssetId == null || billCategoryId == null) {
+                    throw new ParamsException("参数错误");
                 }
-                outAsset.setBalance(outAsset.getBalance().add(transferFee)); //资产中更新手续费
+                assetService.changeBalanceRelative(inAssetId, amount);
+                IncomeBill incomeBill = new IncomeBill(bookId, inAssetId, billCategoryId, amount, time, remark, fileBytes);
+                incomeBillMapper.insertIncomeBillSelective(incomeBill);
+                writeToRedis("income_bill:" + incomeBill.getId(), incomeBill);
             }
-            assetService.updateAsset(outAsset);
-        }
-    }
-
-    @Override
-    public void addIncomeBill(Integer bookId, Integer incomeAssetId, Integer billCategoryId, BigDecimal amount, Timestamp time, String remark, MultipartFile file) {
-        if (bookId == null || amount == null || incomeAssetId == null || billCategoryId == null) {
-            throw new ParamsException("参数错误");
-        }
-        byte[] fileBytes = null;
-        if (file != null) {
-            try {
-                fileBytes = file.getBytes();
-            } catch (IOException e) {
-                e.printStackTrace();
+            case 转账 -> {
+                if (bookId == null || amount == null || inAssetId == null || outAssetId == null) {
+                    throw new ParamsException("参数错误");
+                }
+                assetService.changeBalanceRelative(inAssetId, amount.subtract(transferFee != null ? transferFee : BigDecimal.ZERO));
+                assetService.changeBalanceRelative(outAssetId, amount.negate());
+                TransferBill transferBill = new TransferBill(bookId, inAssetId, outAssetId, amount, transferFee, time, remark, fileBytes);
+                transferBillMapper.insertTransferBillSelective(transferBill);
+                writeToRedis("transfer_bill:" + transferBill.getId(), transferBill);
             }
-        }
-        IncomeBill incomeBill = new IncomeBill(bookId, incomeAssetId, billCategoryId, amount, time, remark, fileBytes);
-        incomeBillMapper.insertIncomeBillSelective(incomeBill);
-        writeToRedis("income_bill:" + incomeBill.getId(), incomeBill);
-    }
-
-    @Override
-    public void addPayBill(Integer bookId, Integer payAssetId, Integer billCategoryId, BigDecimal amount, Timestamp time, String remark, Boolean refunded, MultipartFile file) {
-        if (bookId == null || amount == null || payAssetId == null || billCategoryId == null) {
-            throw new ParamsException("参数错误");
-        }
-        byte[] fileBytes = null;
-        if (file != null) {
-            try {
-                fileBytes = file.getBytes();
-            } catch (IOException e) {
-                e.printStackTrace();
+            case 退款 -> {
+                if (bookId == null || amount == null || payBillId == null || inAssetId == null) {
+                    throw new ParamsException("参数错误");
+                }
+                changeBill(payBillId, null, null, null, null, null, null, null,
+                        Boolean.TRUE, BillType.支出, null, null, null);
+                budgetService.changeTotalUsedBudgetRelative(bookId, amount.negate());
+                budgetService.changeCategoryUsedBudgetRelative(billCategoryId, amount.negate());
+                budgetService.changeCategoryTimesRelative(billCategoryId, -1);
+                RefundBill refundBill = new RefundBill(bookId, payBillId, inAssetId, amount, time, remark, fileBytes);
+                assetService.changeBalanceRelative(inAssetId, amount);
+                refundBillMapper.insertRefundBillSelective(refundBill);
+                writeToRedis("refund_bill:" + refundBill.getId(), refundBill);
             }
         }
-        PayBill payBill = new PayBill(bookId, payAssetId, billCategoryId, amount, time, remark, false, fileBytes);
-        payBillMapper.insertPayBillSelective(payBill);
-        writeToRedis("pay_bill:" + payBill.getId(), payBill);
-    }
-
-    @Override
-    public void addRefundBill(Integer bookId, Integer payBillId, Integer refundAssetId, BigDecimal amount, Timestamp time, String remark, MultipartFile file) {
-        if (bookId == null || amount == null || payBillId == null || refundAssetId == null) {
-            throw new ParamsException("参数错误");
-        }
-        byte[] fileBytes = null;
-        if (file != null) {
-            try {
-                fileBytes = file.getBytes();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        RefundBill refundBill = new RefundBill(bookId, payBillId, refundAssetId, amount, time, remark, fileBytes);
-        refundBillMapper.insertRefundBillSelective(refundBill);
-        writeToRedis("refund_bill:" + refundBill.getId(), refundBill);
-    }
-
-    @Override
-    public void addTransferBill(Integer bookId, Integer inAssetId, Integer outAssetId, BigDecimal amount, BigDecimal transferFee, Timestamp time, String remark,
-                                MultipartFile file) {
-        if (bookId == null || amount == null || inAssetId == null || outAssetId == null) {
-            throw new ParamsException("参数错误");
-        }
-        byte[] fileBytes = null;
-        if (file != null) {
-            try {
-                fileBytes = file.getBytes();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        TransferBill transferBill = new TransferBill(bookId, inAssetId, outAssetId, amount, transferFee, time, remark, fileBytes);
-        transferBillMapper.insertTransferBillSelective(transferBill);
-        writeToRedis("transfer_bill:" + transferBill.getId(), transferBill);
     }
 
     @Override

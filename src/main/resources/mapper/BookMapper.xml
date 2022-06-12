@@ -42,6 +42,31 @@
             </if>
         </trim>
     </insert>
+    <update id="updateTotalBudgetByBook">
+        update book
+        <set>
+            <if test="totalBudget != null">
+                total_budget = #{totalBudget,jdbcType=DECIMAL},
+            </if>
+            <if test="usedBudget != null">
+                used_budget = #{usedBudget,jdbcType=DECIMAL},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <update id="updateUsedBudgetRelativeById">
+        update book
+        <set>
+            used_budget = used_budget + #{relativeValue,jdbcType=DECIMAL}
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <select id="selectTotalBudgetByBook"
+            resultType="java.math.BigDecimal">
+        select total_budget
+        from book
+        where id = #{id,jdbcType=INTEGER}
+    </select>
     <select id="selectBookById" resultMap="BookResultMap" parameterType="Integer">
         select *
         from book
