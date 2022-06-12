@@ -62,7 +62,8 @@
         </trim>
     </insert>
     <delete id="deleteIncomeBillById" parameterType="Integer">
-        delete from income_bill
+        delete
+        from income_bill
         where id = #{id,jdbcType=INTEGER}
     </delete>
     <update id="updateIncomeBillByIdSelective" parameterType="shuhuai.wheremoney.entity.IncomeBill">
@@ -89,6 +90,19 @@
             <if test="image != null">
                 image = #{image,jdbcType=BLOB},
             </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <update id="updateIncomeBillById" parameterType="shuhuai.wheremoney.entity.IncomeBill">
+        update income_bill
+        <set>
+            book_id = #{bookId,jdbcType=INTEGER},
+            income_asset_id = #{incomeAssetId,jdbcType=INTEGER},
+            bill_category_id = #{billCategoryId,jdbcType=INTEGER},
+            amount = #{amount,jdbcType=DECIMAL},
+            bill_time = #{billTime,jdbcType=DATE},
+            remark = #{remark,jdbcType=VARCHAR},
+            image = #{image,jdbcType=BLOB},
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>

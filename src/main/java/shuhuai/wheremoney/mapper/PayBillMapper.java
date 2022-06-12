@@ -14,6 +14,8 @@ public interface PayBillMapper {
 
     Integer updatePayBillByIdSelective(PayBill payBill);
 
+    Integer updatePayBillById(PayBill payBill);
+
     List<PayBill> selectPayBillByBookId(Integer bookId);
 
     List<PayBill> selectPayBillByBookIdTime(Integer bookId, Timestamp startTime, Timestamp endTime);

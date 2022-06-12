@@ -260,4 +260,15 @@ public class BillController extends BaseController {
         billService.deleteBill(id, type);
         return new Response<>(200, "修改账单成功", null);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 401, message = "token过期"),
+            @ApiResponse(code = 422, message = "参数错误"),
+    })
+    @RequestMapping(value = "/delete-bill-image", method = RequestMethod.POST)
+    @ApiOperation(value = "删除账单图片")
+    public Response<Object> deleteBillImage(@RequestParam Integer id, @RequestParam BillType type) {
+        billService.deleteBillImage(id, type);
+        return new Response<>(200, "删除账单图片成功", null);
+    }
 }

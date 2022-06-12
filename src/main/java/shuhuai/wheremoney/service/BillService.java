@@ -51,4 +51,6 @@ public interface BillService {
                     Integer billCategoryId, Boolean refunded, BillType type, MultipartFile file, Integer payBillId, BigDecimal transferFee);
 
     void deleteBill(Integer id, BillType type);
+
+    void deleteBillImage(Integer id, BillType type);
 }

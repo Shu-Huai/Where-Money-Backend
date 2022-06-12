@@ -103,6 +103,20 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    <update id="updatePayBillById" parameterType="shuhuai.wheremoney.entity.PayBill">
+        update pay_bill
+        <set>
+            book_id = #{bookId,jdbcType=INTEGER},
+            pay_asset_id = #{payAssetId,jdbcType=INTEGER},
+            bill_category_id = #{billCategoryId,jdbcType=INTEGER},
+            amount = #{amount,jdbcType=DECIMAL},
+            bill_time = #{billTime,jdbcType=DATE},
+            remark = #{remark,jdbcType=VARCHAR},
+            refunded = #{refunded,jdbcType=BOOLEAN},
+            image = #{image,jdbcType=BLOB},
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
     <select id="selectPayBillByBookId" resultMap="PayBillResultMap">
         select *
         from pay_bill

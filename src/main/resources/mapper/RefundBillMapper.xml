@@ -93,6 +93,18 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    <update id="updateRefundBillById" parameterType="shuhuai.wheremoney.entity.RefundBill">
+        <set>
+            book_id = #{bookId,jdbcType=INTEGER},
+            pay_bill_id = #{payBillId,jdbcType=INTEGER},
+            refund_asset_id = #{refundAssetId,jdbcType=INTEGER},
+            amount = #{amount,jdbcType=DECIMAL},
+            bill_time = #{billTime,jdbcType=DATE},
+            remark = #{remark,jdbcType=VARCHAR},
+            image = #{image,jdbcType=BLOB},
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
     <select id="selectRefundBillByBookId" resultMap="RefundBillResultMap">
         select *
         from refund_bill

@@ -692,4 +692,49 @@ public class BillServiceImpl implements BillService {
             }
         }
     }
+
+    @Override
+    public void deleteBillImage(Integer id, BillType type) {
+        if (id == null || type == null) {
+            throw new ParamsException("参数错误");
+        }
+        Integer result = 0;
+        switch (type) {
+            case 支出 -> {
+                PayBill payBill = (PayBill) getBill(id, type);
+                if (payBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                payBill.setImage(null);
+                result = payBillMapper.updatePayBillById(payBill);
+            }
+            case 收入 -> {
+                IncomeBill incomeBill = (IncomeBill) getBill(id, type);
+                if (incomeBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                incomeBill.setImage(null);
+                result = incomeBillMapper.updateIncomeBillById(incomeBill);
+            }
+            case 退款 -> {
+                RefundBill refundBill = (RefundBill) getBill(id, type);
+                if (refundBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                refundBill.setImage(null);
+                result = refundBillMapper.updateRefundBillById(refundBill);
+            }
+            case 转账 -> {
+                TransferBill transferBill = (TransferBill) getBill(id, type);
+                if (transferBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                transferBill.setImage(null);
+                result = transferBillMapper.updateTransferBillById(transferBill);
+            }
+        }
+        if (result != 1) {
+            throw new ServerException("服务器错误");
+        }
+    }
 }

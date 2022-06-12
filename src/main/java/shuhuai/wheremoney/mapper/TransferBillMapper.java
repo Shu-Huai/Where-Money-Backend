@@ -9,8 +9,12 @@ import java.util.List;
 @Mapper
 public interface TransferBillMapper {
     void insertTransferBillSelective(TransferBill transferBill);
+
     Integer deleteTransferBillById(Integer id);
+
     Integer updateTransferBillByIdSelective(TransferBill transferBill);
+
+    Integer updateTransferBillById(TransferBill transferBill);
 
     List<TransferBill> selectTransferBillByBookId(Integer bookId);
 

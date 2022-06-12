@@ -14,6 +14,8 @@ public interface IncomeBillMapper {
 
     Integer updateIncomeBillByIdSelective(IncomeBill incomeBill);
 
+    Integer updateIncomeBillById(IncomeBill incomeBill);
+
     List<IncomeBill> selectIncomeBillByBookId(Integer bookId);
 
     List<IncomeBill> selectIncomeBillByBookIdTime(Integer bookId, Timestamp startTime, Timestamp endTime);
