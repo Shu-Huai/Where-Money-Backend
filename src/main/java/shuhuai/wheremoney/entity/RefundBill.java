@@ -1,11 +1,13 @@
 package shuhuai.wheremoney.entity;
 
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @ToString
+@NoArgsConstructor
 public class RefundBill extends BaseBill {
     private Integer payBillId;
     private Integer refundAssetId;
