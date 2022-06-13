@@ -8,10 +8,7 @@ import shuhuai.wheremoney.mapper.IncomeBillMapper;
 import shuhuai.wheremoney.mapper.PayBillMapper;
 import shuhuai.wheremoney.mapper.RefundBillMapper;
 import shuhuai.wheremoney.mapper.TransferBillMapper;
-import shuhuai.wheremoney.service.AssetService;
-import shuhuai.wheremoney.service.BillCategoryService;
-import shuhuai.wheremoney.service.BillService;
-import shuhuai.wheremoney.service.BudgetService;
+import shuhuai.wheremoney.service.*;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
 import shuhuai.wheremoney.service.excep.common.ServerException;
 import shuhuai.wheremoney.type.BillType;
@@ -305,8 +302,8 @@ public class BillServiceImpl implements BillService {
         List<PayBill> payBills = payBillMapper.selectPayBillByBookIdTime(bookId, startTime, endTime);
         if (payBills.isEmpty()) {
             return new HashMap<>(Map.of(
-                    "max", new PayBill(null, null, BigDecimal.ZERO, null, null, null, null, null, null),
-                    "min", new PayBill(null, null, BigDecimal.ZERO, null, null, null, null, null, null)));
+                    "max", new PayBill(null, null, null, null, BigDecimal.ZERO, null, null, null, null),
+                    "min", new PayBill(null, null, null, null, BigDecimal.ZERO, null, null, null, null)));
         }
         PayBill max = null;
         PayBill min = null;
@@ -409,7 +406,7 @@ public class BillServiceImpl implements BillService {
                 if (originBill == null) {
                     throw new ParamsException("参数错误");
                 }
-                PayBill newBill = new PayBill(id, bookId, amount, billTime, remark, fileBytes, outAssetId, billCategoryId, refunded);
+                PayBill newBill = new PayBill(id, bookId, outAssetId, billCategoryId, amount, billTime, remark, refunded, fileBytes);
                 if (newBill.getRefunded() != null && !originBill.getRefunded() && newBill.getRefunded()) {
                     throw new ParamsException("参数错误");
                 } else if (newBill.getRefunded() != null && originBill.getRefunded() && !newBill.getRefunded()) {
