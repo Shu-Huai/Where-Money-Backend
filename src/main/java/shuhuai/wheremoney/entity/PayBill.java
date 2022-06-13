@@ -12,7 +12,7 @@ public class PayBill extends BaseBill implements Serializable {
     private Integer billCategoryId;
     private Boolean refunded;
 
-    public PayBill(Integer id, Integer bookId, Integer payAssetId, Integer billCategoryId, BigDecimal amount, Timestamp billTime, String remark, Boolean refunded, byte[] image) {
+    public PayBill(Integer id, Integer bookId, BigDecimal amount, Timestamp billTime, String remark, byte[] image, Integer payAssetId, Integer billCategoryId, Boolean refunded) {
         super(id, bookId, amount, billTime, remark, image);
         this.payAssetId = payAssetId;
         this.billCategoryId = billCategoryId;
