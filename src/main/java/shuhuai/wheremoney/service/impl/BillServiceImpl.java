@@ -1,5 +1,6 @@
 package shuhuai.wheremoney.service.impl;
 
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -8,14 +9,16 @@ import shuhuai.wheremoney.mapper.IncomeBillMapper;
 import shuhuai.wheremoney.mapper.PayBillMapper;
 import shuhuai.wheremoney.mapper.RefundBillMapper;
 import shuhuai.wheremoney.mapper.TransferBillMapper;
-import shuhuai.wheremoney.service.*;
+import shuhuai.wheremoney.service.AssetService;
+import shuhuai.wheremoney.service.BillCategoryService;
+import shuhuai.wheremoney.service.BillService;
+import shuhuai.wheremoney.service.BudgetService;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
 import shuhuai.wheremoney.service.excep.common.ServerException;
 import shuhuai.wheremoney.type.BillType;
 import shuhuai.wheremoney.utils.RedisConnector;
 import shuhuai.wheremoney.utils.TimeComputer;
 
-import javax.annotation.Resource;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -26,11 +29,11 @@ import java.util.*;
 public class BillServiceImpl implements BillService {
     @Value("${redis.bill.expire}")
     private Long billExpire;
-    @Resource
+    @jakarta.annotation.Resource
     private BillCategoryService billCategoryService;
     @Resource
     private AssetService assetService;
-    @Resource
+    @jakarta.annotation.Resource
     private PayBillMapper payBillMapper;
     @Resource
     private IncomeBillMapper incomeBillMapper;
@@ -38,9 +41,9 @@ public class BillServiceImpl implements BillService {
     private TransferBillMapper transferBillMapper;
     @Resource
     private RefundBillMapper refundBillMapper;
-    @Resource
+    @jakarta.annotation.Resource
     private BudgetService budgetService;
-    @Resource
+    @jakarta.annotation.Resource
     private RedisConnector redisConnector;
 
     private void writeToRedis(String key, BaseBill bill) {

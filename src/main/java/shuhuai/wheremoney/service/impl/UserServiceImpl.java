@@ -1,5 +1,6 @@
 package shuhuai.wheremoney.service.impl;
 
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import shuhuai.wheremoney.entity.Book;
 import shuhuai.wheremoney.entity.User;
@@ -14,15 +15,13 @@ import shuhuai.wheremoney.service.excep.user.UserNameOccupiedException;
 import shuhuai.wheremoney.service.excep.user.UserNamePasswordErrorException;
 import shuhuai.wheremoney.utils.HashComputer;
 
-import javax.annotation.Resource;
-
 @Service
 public class UserServiceImpl implements UserService {
-    @Resource
+    @jakarta.annotation.Resource
     private UserMapper userMapper;
     @Resource
     private BookMapper bookMapper;
-    @Resource
+    @jakarta.annotation.Resource
     private BillCategoryService billCategoryService;
 
     public void register(String userName, String password) throws ServerException, UserNameOccupiedException, ParamsException {

@@ -1,5 +1,6 @@
 package shuhuai.wheremoney.service.impl;
 
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import shuhuai.wheremoney.entity.*;
@@ -15,7 +16,6 @@ import shuhuai.wheremoney.utils.BeanGetter;
 import shuhuai.wheremoney.utils.RedisConnector;
 import shuhuai.wheremoney.utils.TimeComputer;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class AssetServiceImpl implements AssetService {
     private UserMapper userMapper;
     @Resource
     private BookMapper bookMapper;
-    @Resource
+    @jakarta.annotation.Resource
     private RedisConnector redisConnector;
 
     @Override

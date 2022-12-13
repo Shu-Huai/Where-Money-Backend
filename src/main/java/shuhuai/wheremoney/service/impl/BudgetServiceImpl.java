@@ -1,20 +1,19 @@
 package shuhuai.wheremoney.service.impl;
 
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import shuhuai.wheremoney.entity.Budget;
 import shuhuai.wheremoney.mapper.BookMapper;
 import shuhuai.wheremoney.mapper.BudgetMapper;
 import shuhuai.wheremoney.service.BudgetService;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
-import shuhuai.wheremoney.service.excep.common.ServerException;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
 
 @Service
 public class BudgetServiceImpl implements BudgetService {
-    @Resource
+    @jakarta.annotation.Resource
     private BudgetMapper budgetMapper;
     @Resource
     private BookMapper bookMapper;
@@ -62,6 +61,7 @@ public class BudgetServiceImpl implements BudgetService {
         }
         bookMapper.updateUsedBudgetRelativeById(id, relativeValue);
     }
+
     @Override
     public void changeCategoryUsedBudgetRelative(Integer billCategoryId, BigDecimal relativeValue) {
         if (billCategoryId == null || relativeValue == null) {

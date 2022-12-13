@@ -1,5 +1,6 @@
 package shuhuai.wheremoney.service;
 
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -8,7 +9,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import shuhuai.wheremoney.entity.Asset;
 import shuhuai.wheremoney.utils.TimeComputer;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.ParseException;

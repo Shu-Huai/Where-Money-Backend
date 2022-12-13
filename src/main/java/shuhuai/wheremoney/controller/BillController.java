@@ -1,9 +1,10 @@
 package shuhuai.wheremoney.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -13,10 +14,11 @@ import org.springframework.web.multipart.MultipartFile;
 import shuhuai.wheremoney.entity.*;
 import shuhuai.wheremoney.response.Response;
 import shuhuai.wheremoney.response.bill.*;
-import shuhuai.wheremoney.service.*;
+import shuhuai.wheremoney.service.AssetService;
+import shuhuai.wheremoney.service.BillCategoryService;
+import shuhuai.wheremoney.service.BillService;
 import shuhuai.wheremoney.type.BillType;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -25,23 +27,23 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bill")
-@Api(tags = "账单管理")
+@Tag(name = "账单管理")
 @Slf4j
 public class BillController extends BaseController {
     @Resource
     private BillService billService;
     @Resource
     private AssetService assetService;
-    @Resource
+    @jakarta.annotation.Resource
     private BillCategoryService billCategoryService;
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
-            @ApiResponse(code = 500, message = "服务器错误")
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
+            @ApiResponse(responseCode = "500", description = "服务器错误")
     })
     @RequestMapping(value = "/add-bill", method = RequestMethod.POST)
-    @ApiOperation(value = "新建账单")
+    @Operation(summary = "新建账单")
     public Response<Object> addBill(@RequestParam Integer bookId, Integer inAssetId, Integer outAssetId, Integer payBillId,
                                     Integer billCategoryId, @RequestParam BillType type, @RequestParam BigDecimal amount, BigDecimal transferFee,
                                     @RequestParam Timestamp time, String remark, Boolean refunded, MultipartFile file) {
@@ -111,22 +113,22 @@ public class BillController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/bill", method = RequestMethod.GET)
-    @ApiOperation(value = "获得账单")
+    @Operation(summary = "获得账单")
     public Response<BaseGetBillResponse> getBill(@RequestParam Integer id, @RequestParam BillType type) {
         BaseBill bill = billService.getBill(id, type);
         return new Response<>(200, "获得账单成功", entityToResponse(bill));
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/all-bill", method = RequestMethod.GET)
-    @ApiOperation(value = "获得指定账本的所有账单")
+    @Operation(summary = "获得指定账本的所有账单")
     public Response<GetAllBillResponse> getBillByBook(@RequestParam Integer bookId) {
         List<BaseBill> billList = billService.getBillByBook(bookId);
         List<BaseGetBillResponse> billResponseList = new ArrayList<>();
@@ -137,11 +139,11 @@ public class BillController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/all-bill-time", method = RequestMethod.GET)
-    @ApiOperation(value = "获得指定账本的所有账单时间")
+    @Operation(summary = "获得指定账本的所有账单时间")
     public Response<GetAllBillResponse> getBillByBookTIme(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         List<BaseBill> billList = billService.getBillByBookTime(bookId, startTime, endTime);
         List<BaseGetBillResponse> billResponseList = new ArrayList<>();
@@ -152,11 +154,11 @@ public class BillController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/category-statistic-time", method = RequestMethod.GET)
-    @ApiOperation(value = "分类统计指定账本的指定时间段的账单")
+    @Operation(summary = "分类统计指定账本的指定时间段的账单")
     public Response<StatisticResponse> getCategoryStatisticTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         List<Map<String, Object>> payStatistic = billService.categoryPayStatisticTime(bookId, startTime, endTime);
         List<Map<String, Object>> incomeStatistic = billService.categoryIncomeStatisticTime(bookId, startTime, endTime);
@@ -165,11 +167,11 @@ public class BillController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/day-statistic-time", method = RequestMethod.GET)
-    @ApiOperation(value = "分日统计指定账本的指定时间段的账单")
+    @Operation(summary = "分日统计指定账本的指定时间段的账单")
     public Response<StatisticResponse> getDayStatisticTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         List<Map<String, Object>> payStatistic = billService.getDayPayStatisticTime(bookId, startTime, endTime);
         List<Map<String, Object>> incomeStatistic = billService.getDayIncomeStatisticTime(bookId, startTime, endTime);
@@ -178,11 +180,11 @@ public class BillController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/add-bill-category", method = RequestMethod.POST)
-    @ApiOperation(value = "添加用户自定义账单分类")
+    @Operation(summary = "添加用户自定义账单分类")
     public Response<StatisticResponse> addBillCategory(@RequestParam Integer bookId, @RequestParam String billCategoryName,
                                                        @RequestParam String svg, @RequestParam BillType type) {
         billCategoryService.addBillCategory(bookId, billCategoryName, svg, type);
@@ -190,22 +192,22 @@ public class BillController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/get-bill-category", method = RequestMethod.GET)
-    @ApiOperation(value = "查看账本下的所有账单分类")
+    @Operation(summary = "查看账本下的所有账单分类")
     public Response<List<BillCategory>> getBillCategory(@RequestParam Integer bookId) {
         List<BillCategory> list = billCategoryService.getBillCategoriesByBook(bookId);
         return new Response<>(200, "获取成功", list);
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/max-min-pay-time", method = RequestMethod.GET)
-    @ApiOperation(value = "获得最大最小支出时间")
+    @Operation(summary = "获得最大最小支出时间")
     public Response<MaxMinResponse> getMaxMinPayTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         Map<String, PayBill> result = billService.getMaxMinPayBill(bookId, startTime, endTime);
         GetPayBillResponse max = (GetPayBillResponse) entityToResponse(result.get("max"));
@@ -214,11 +216,11 @@ public class BillController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/max-min-income-time", method = RequestMethod.GET)
-    @ApiOperation(value = "获得最大最小收入时间")
+    @Operation(summary = "获得最大最小收入时间")
     public Response<MaxMinResponse> getMaxMinIncomeTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         Map<String, IncomeBill> result = billService.getMaxMinIncomeBill(bookId, startTime, endTime);
         GetIncomeBillResponse max = (GetIncomeBillResponse) entityToResponse(result.get("max"));
@@ -227,22 +229,22 @@ public class BillController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/bill-image", method = RequestMethod.GET)
-    @ApiOperation(value = "获得账单图片")
+    @Operation(summary = "获得账单图片")
     public Response<byte[]> getBillImage(@RequestParam Integer billId, @RequestParam BillType type) {
         byte[] image = billService.getBillImage(billId, type);
         return new Response<>(200, "获得账单图片成功", image);
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/change-bill", method = RequestMethod.POST)
-    @ApiOperation(value = "修改账单")
+    @Operation(summary = "修改账单")
     public Response<Object> changeBill(@RequestParam Integer id, Integer bookId, BigDecimal amount, Timestamp billTime, String remark, Integer inAssetId,
                                        Integer outAssetId, Integer billCategoryId, Boolean refunded, @RequestParam BillType type, MultipartFile file,
                                        Integer payBillId, BigDecimal transferFee) {
@@ -251,22 +253,22 @@ public class BillController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/delete-bill", method = RequestMethod.POST)
-    @ApiOperation(value = "删除账单")
+    @Operation(summary = "删除账单")
     public Response<Object> deleteBill(@RequestParam Integer id, @RequestParam BillType type) {
         billService.deleteBill(id, type);
         return new Response<>(200, "修改账单成功", null);
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/delete-bill-image", method = RequestMethod.POST)
-    @ApiOperation(value = "删除账单图片")
+    @Operation(summary = "删除账单图片")
     public Response<Object> deleteBillImage(@RequestParam Integer id, @RequestParam BillType type) {
         billService.deleteBillImage(id, type);
         return new Response<>(200, "删除账单图片成功", null);

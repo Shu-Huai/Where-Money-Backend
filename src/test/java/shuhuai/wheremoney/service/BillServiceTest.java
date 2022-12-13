@@ -1,5 +1,6 @@
 package shuhuai.wheremoney.service;
 
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,7 +11,6 @@ import shuhuai.wheremoney.entity.IncomeBill;
 import shuhuai.wheremoney.entity.PayBill;
 import shuhuai.wheremoney.type.BillType;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.ParseException;

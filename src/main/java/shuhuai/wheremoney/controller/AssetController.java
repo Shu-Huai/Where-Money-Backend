@@ -1,9 +1,10 @@
 package shuhuai.wheremoney.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -18,7 +19,6 @@ import shuhuai.wheremoney.service.AssetService;
 import shuhuai.wheremoney.type.AssetType;
 import shuhuai.wheremoney.utils.TokenValidator;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
@@ -26,19 +26,19 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/asset")
-@Api(tags = "资产管理")
+@Tag(name = "资产管理")
 @Slf4j
 public class AssetController extends BaseController {
     @Resource
     private AssetService assetService;
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
-            @ApiResponse(code = 500, message = "服务器错误")
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
+            @ApiResponse(responseCode = "500", description = "服务器错误")
     })
     @RequestMapping(value = "/add-asset", method = RequestMethod.POST)
-    @ApiOperation(value = "新建资产")
+    @Operation(summary = "新建资产")
     public Response<Object> addAsset(@RequestParam String assetName, @RequestParam BigDecimal balance, @RequestParam AssetType type,
                                      Integer billDate, Integer repayDate, BigDecimal quota,
                                      @RequestParam Boolean inTotal, @RequestParam String svg) {
@@ -48,12 +48,12 @@ public class AssetController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
-            @ApiResponse(code = 500, message = "服务器错误")
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
+            @ApiResponse(responseCode = "500", description = "服务器错误")
     })
     @RequestMapping(value = "/update-asset", method = RequestMethod.POST)
-    @ApiOperation(value = "修改资产")
+    @Operation(summary = "修改资产")
     public Response<Object> updateAsset(@RequestParam Integer assetId, BigDecimal balance, String assetName,
                                         Integer billDate, Integer repayDate, BigDecimal quota, Boolean inTotal, String svg) {
         Asset oldAsset = assetService.getAsset(assetId);
@@ -70,11 +70,11 @@ public class AssetController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/get-all-asset", method = RequestMethod.GET)
-    @ApiOperation(value = "获得所有资产")
+    @Operation(summary = "获得所有资产")
     public Response<GetAllAssetResponse> getAllAsset() {
         String userName = TokenValidator.getUser().get("userName");
         List<Asset> assetList = assetService.getAllAsset(userName);
@@ -82,22 +82,22 @@ public class AssetController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/get-asset", method = RequestMethod.GET)
-    @ApiOperation(value = "获得资产")
+    @Operation(summary = "获得资产")
     public Response<GetAssetResponse> getAsset(@RequestParam Integer id) {
         Asset asset = assetService.getAsset(id);
         return new Response<>(200, "获得资产成功", new GetAssetResponse(asset));
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     @RequestMapping(value = "/day-statistic-time", method = RequestMethod.GET)
-    @ApiOperation(value = "获得日统计时间")
+    @Operation(summary = "获得日统计时间")
     public Response<DayStatisticTimeResponse> getDayStatisticTime(@RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         String userName = TokenValidator.getUser().get("userName");
         List<Map<String, Object>> result = assetService.getDayStatisticTime(userName, startTime, endTime);

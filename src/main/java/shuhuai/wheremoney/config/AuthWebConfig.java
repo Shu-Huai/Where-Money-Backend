@@ -1,11 +1,10 @@
 package shuhuai.wheremoney.config;
 
+import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import shuhuai.wheremoney.utils.TokenValidator;
-
-import javax.annotation.Resource;
 
 @Configuration
 public class AuthWebConfig implements WebMvcConfigurer {

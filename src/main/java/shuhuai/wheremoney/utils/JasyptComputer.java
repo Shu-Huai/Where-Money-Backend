@@ -1,16 +1,41 @@
 package shuhuai.wheremoney.utils;
 
+import lombok.NoArgsConstructor;
 import org.jasypt.encryption.StringEncryptor;
-import org.springframework.stereotype.Component;
+import org.jasypt.encryption.pbe.PooledPBEStringEncryptor;
+import org.jasypt.encryption.pbe.config.SimpleStringPBEConfig;
+import org.springframework.beans.factory.annotation.Value;
 
-import javax.annotation.Resource;
+@NoArgsConstructor
+public class JasyptComputer implements StringEncryptor {
+    @Value("${jasypt.encryptor.password}")
+    private String password;
+    @Value("${jasypt.encryptor.algorithm}")
+    private String algorithm;
 
-@Component
-public class JasyptComputer {
-    @Resource
-    private StringEncryptor stringEncryptor;
+    @Override
+    public String encrypt(String message) {
+        PooledPBEStringEncryptor encryptor = new PooledPBEStringEncryptor();
+        encryptor.setConfig(getConfig());
+        return encryptor.encrypt(message);
+    }
 
-    public String jasyptEncrypt(String text) {
-        return stringEncryptor.encrypt(text);
+    @Override
+    public String decrypt(String encryptedMessage) {
+        PooledPBEStringEncryptor encryptor = new PooledPBEStringEncryptor();
+        encryptor.setConfig(getConfig());
+        return encryptor.decrypt(encryptedMessage);
+    }
+
+    public SimpleStringPBEConfig getConfig() {
+        SimpleStringPBEConfig config = new SimpleStringPBEConfig();
+        config.setPassword(this.password);
+        config.setAlgorithm(this.algorithm);
+        config.setKeyObtentionIterations(1000);
+        config.setPoolSize(1);
+        config.setSaltGeneratorClassName("org.jasypt.salt.RandomSaltGenerator");
+        config.setIvGeneratorClassName("org.jasypt.iv.NoIvGenerator");
+        config.setStringOutputType("base64");
+        return config;
     }
 }

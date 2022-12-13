@@ -1,5 +1,6 @@
 package shuhuai.wheremoney.service.impl;
 
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import shuhuai.wheremoney.entity.BillCategory;
 import shuhuai.wheremoney.entity.Book;
@@ -14,7 +15,6 @@ import shuhuai.wheremoney.service.excep.common.ServerException;
 import shuhuai.wheremoney.service.excep.user.UserMissingException;
 import shuhuai.wheremoney.type.BillType;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;

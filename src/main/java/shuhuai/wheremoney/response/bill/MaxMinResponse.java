@@ -1,7 +1,5 @@
 package shuhuai.wheremoney.response.bill;
 
-import shuhuai.wheremoney.entity.BaseBill;
-
 public class MaxMinResponse {
     private BaseGetBillResponse max;
     private BaseGetBillResponse min;

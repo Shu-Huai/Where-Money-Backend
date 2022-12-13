@@ -31,7 +31,11 @@ public class JsonOperator {
             error.printStackTrace();
         }
         JSONObject jsonObject = JSON.parseObject(json);
-        Object objArray = jsonObject.get(name);
-        return JSON.parseArray(objArray.toString());
+        if (jsonObject != null) {
+            Object objArray = jsonObject.get(name);
+            return JSON.parseArray(objArray.toString());
+        } else {
+            return null;
+        }
     }
 }

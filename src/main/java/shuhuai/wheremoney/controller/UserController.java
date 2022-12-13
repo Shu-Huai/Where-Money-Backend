@@ -1,9 +1,10 @@
 package shuhuai.wheremoney.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -15,11 +16,9 @@ import shuhuai.wheremoney.response.user.LoginResponse;
 import shuhuai.wheremoney.service.UserService;
 import shuhuai.wheremoney.utils.TokenValidator;
 
-import javax.annotation.Resource;
-
 @RestController
 @RequestMapping("/api/user")
-@Api(tags = "用户管理")
+@Tag(name = "用户管理")
 @Slf4j
 public class UserController extends BaseController {
     @Resource
@@ -28,12 +27,12 @@ public class UserController extends BaseController {
     private TokenValidator tokenValidator;
 
     @RequestMapping(value = "/register", method = RequestMethod.POST)
-    @ApiOperation(value = "注册")
+    @Operation(summary = "注册")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "注册成功"),
-            @ApiResponse(code = 400, message = "用户名已被占用"),
-            @ApiResponse(code = 422, message = "参数错误"),
-            @ApiResponse(code = 500, message = "服务器错误")
+            @ApiResponse(responseCode = "200", description = "注册成功"),
+            @ApiResponse(responseCode = "400", description = "用户名已被占用"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
+            @ApiResponse(responseCode = "500", description = "服务器错误")
     })
     public Response<Object> register(@RequestParam String userName, @RequestParam String password) {
         userService.register(userName, password);
@@ -41,11 +40,11 @@ public class UserController extends BaseController {
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.POST)
-    @ApiOperation(value = "登录")
+    @Operation(summary = "登录")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "登录成功"),
-            @ApiResponse(code = 401, message = "账户或密码错误"),
-            @ApiResponse(code = 422, message = "参数错误"),
+            @ApiResponse(responseCode = "200", description = "登录成功"),
+            @ApiResponse(responseCode = "401", description = "账户或密码错误"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     public Response<LoginResponse> login(@RequestParam String userName, @RequestParam String password) {
         userService.login(userName, password);
@@ -54,14 +53,14 @@ public class UserController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "修改用户名成功"),
-            @ApiResponse(code = 400, message = "用户名已被占用"),
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
-            @ApiResponse(code = 500, message = "服务器错误")
+            @ApiResponse(responseCode = "200", description = "修改用户名成功"),
+            @ApiResponse(responseCode = "400", description = "用户名已被占用"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
+            @ApiResponse(responseCode = "500", description = "服务器错误")
     })
     @RequestMapping(value = "/change-user-name", method = RequestMethod.POST)
-    @ApiOperation(value = "修改用户名")
+    @Operation(summary = "修改用户名")
     public Response<ChangeUserNameResponse> changeUserName(@RequestParam String userName) {
         String oldUserName = TokenValidator.getUser().get("userName");
         userService.changeUsername(oldUserName, userName);
@@ -70,13 +69,13 @@ public class UserController extends BaseController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "修改用户名成功"),
-            @ApiResponse(code = 401, message = "token过期"),
-            @ApiResponse(code = 422, message = "参数错误"),
-            @ApiResponse(code = 500, message = "服务器错误")
+            @ApiResponse(responseCode = "200", description = "修改用户名成功"),
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
+            @ApiResponse(responseCode = "500", description = "服务器错误")
     })
     @RequestMapping(value = "/change-password", method = RequestMethod.POST)
-    @ApiOperation(value = "修改密码")
+    @Operation(summary = "修改密码")
     public Response<Object> changePassword(@RequestParam String password) {
         String userName = TokenValidator.getUser().get("userName");
         userService.changePassword(userName, password);
