@@ -17,6 +17,7 @@ public class AuthWebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/**")
                 .excludePathPatterns("/api/test/generate-token")
                 .excludePathPatterns("/api/user/login")
-                .excludePathPatterns("/api/user/register");
+                .excludePathPatterns("/api/user/register")
+                .excludePathPatterns("/api/manage/log");
     }
 }

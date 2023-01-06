@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-
 public class AssetServiceImpl implements AssetService {
     @Value("${redis.asset.expire}")
     private Long assetExpire;
