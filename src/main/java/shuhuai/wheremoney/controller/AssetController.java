@@ -57,7 +57,6 @@ public class AssetController extends BaseController {
     public Response<Object> updateAsset(@RequestParam Integer assetId, BigDecimal balance, String assetName,
                                         Integer billDate, Integer repayDate, BigDecimal quota, Boolean inTotal, String svg) {
         Asset oldAsset = assetService.getAsset(assetId);
-        oldAsset.setType(null);
         if (balance != null) oldAsset.setBalance(balance);
         if (assetName != null) oldAsset.setAssetName(assetName);
         if (billDate != null) oldAsset.setBillDate(billDate);
