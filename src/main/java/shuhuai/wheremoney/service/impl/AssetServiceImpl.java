@@ -125,21 +125,13 @@ public class AssetServiceImpl implements AssetService {
                 }
             }
             Timestamp finalTime = curTime;
-            curTotal = curTotal.subtract(dayTotal);
             BigDecimal finalDayTotal = curTotal;
             if (!curTime.after(TimeComputer.getDay(endTime))) {
-                if (finalTime.equals(TimeComputer.getDay(TimeComputer.getNow()))) {
-                    BigDecimal finalTodayTotal = dayTotal;
-                    result.add(new HashMap<>(2) {{
-                        put("time", finalTime);
-                        put("total", finalDayTotal.add(finalTodayTotal));
-                    }});
-                } else {
-                    result.add(new HashMap<>(2) {{
-                        put("time", finalTime);
-                        put("total", finalDayTotal);
-                    }});
-                }
+                result.add(new HashMap<>(2) {{
+                    put("time", TimeComputer.getDayEnd(finalTime));
+                    put("total", finalDayTotal);
+                }});
+                curTotal = curTotal.subtract(dayTotal);
             }
         }
         return result;
