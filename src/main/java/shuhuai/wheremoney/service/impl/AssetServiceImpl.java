@@ -99,7 +99,6 @@ public class AssetServiceImpl implements AssetService {
         List<BaseBill> billTimeList = new ArrayList<>();
         BillService billService = BeanGetter.getBean(BillService.class);
         for (Book book : bookList) {
-
             billTimeList.addAll(billService.getBillByBookTime(book.getId(), startTime, endTime));
         }
         Map<Timestamp, List<BaseBill>> billTimeMap = new HashMap<>();
@@ -129,10 +128,18 @@ public class AssetServiceImpl implements AssetService {
             curTotal = curTotal.subtract(dayTotal);
             BigDecimal finalDayTotal = curTotal;
             if (!curTime.after(TimeComputer.getDay(endTime))) {
-                result.add(new HashMap<>(2) {{
-                    put("time", finalTime);
-                    put("total", finalDayTotal);
-                }});
+                if (finalTime.equals(TimeComputer.getDay(TimeComputer.getNow()))) {
+                    BigDecimal finalTodayTotal = dayTotal;
+                    result.add(new HashMap<>(2) {{
+                        put("time", finalTime);
+                        put("total", finalDayTotal.add(finalTodayTotal));
+                    }});
+                } else {
+                    result.add(new HashMap<>(2) {{
+                        put("time", finalTime);
+                        put("total", finalDayTotal);
+                    }});
+                }
             }
         }
         return result;
