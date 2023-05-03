@@ -82,4 +82,11 @@ public class BillServiceTest {
                 BillType.支出, null, null, null);
         log.info("修改成功");
     }
+
+    @Test
+    public void addBillTest() throws ParseException {
+        billService.addBill(23, 7, 0, 266, 89, BillType.退款, new BigDecimal(430),
+                null, new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2023-05-03 19:25:00").getTime()),
+                "退款", null, null);
+    }
 }
