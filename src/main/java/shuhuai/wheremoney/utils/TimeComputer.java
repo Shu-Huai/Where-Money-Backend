@@ -3,10 +3,8 @@ package shuhuai.wheremoney.utils;
 import java.sql.Timestamp;
 
 public class TimeComputer {
-    private static final Timestamp now = new Timestamp(System.currentTimeMillis());
-
     public static Timestamp getNow() {
-        return now;
+        return new Timestamp(System.currentTimeMillis());
     }
 
     public static Timestamp nextDay(Timestamp timestamp) {

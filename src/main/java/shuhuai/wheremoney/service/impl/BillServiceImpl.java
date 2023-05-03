@@ -410,9 +410,7 @@ public class BillServiceImpl implements BillService {
                     throw new ParamsException("参数错误");
                 }
                 PayBill newBill = new PayBill(id, bookId, outAssetId, billCategoryId, amount, billTime, remark, refunded, fileBytes);
-                if (newBill.getRefunded() != null && !originBill.getRefunded() && newBill.getRefunded()) {
-                    throw new ParamsException("参数错误");
-                } else if (newBill.getRefunded() != null && originBill.getRefunded() && !newBill.getRefunded()) {
+                if (newBill.getRefunded() != null && originBill.getRefunded() && !newBill.getRefunded()) {
                     List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(originBill.getId());
                     for (RefundBill refundBill : refundBills) {
                         deleteBill(refundBill);
