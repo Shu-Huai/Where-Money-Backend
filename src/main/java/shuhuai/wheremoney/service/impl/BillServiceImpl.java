@@ -563,10 +563,21 @@ public class BillServiceImpl implements BillService {
                 redisConnector.deleteObject("transfer_bill:" + transferBill.getId());
             }
         } else if (bill instanceof RefundBill refundBill) {
+            // 删除退款
+            // 把退的钱减回去
             assetService.changeBalanceRelative(refundBill.getRefundAssetId(), refundBill.getAmount().negate());
+            // 删除数据库里的退款记录
             result = refundBillMapper.deleteRefundBillById(refundBill.getId());
+            // 修改数据库的支出记录
+            result &= payBillMapper.updatePayBillByIdSelective(new PayBill(refundBill.getPayBillId(), false));
+            // 如果在redis里
             if (redisConnector.existObject("refund_bill:" + refundBill.getId())) {
                 redisConnector.deleteObject("refund_bill:" + refundBill.getId());
+            }
+            if (redisConnector.existObject("pay_bill:" + refundBill.getPayBillId())){
+                PayBill payBill= (PayBill) redisConnector.readObject("pay_bill:" + refundBill.getPayBillId());
+                payBill.setRefunded(false);
+                writeToRedis("pay_bill:" + payBill.getId(), payBill);
             }
         }
         if (result != 1) {

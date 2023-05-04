@@ -19,6 +19,10 @@ public class BaseBill implements Serializable {
     private String remark;
     private byte[] image;
 
+    public BaseBill(Integer id) {
+        this.id = id;
+    }
+
     public BaseBill(Integer bookId, BigDecimal amount, Timestamp billTime, String remark, byte[] image) {
         this.bookId = bookId;
         this.amount = amount;
