@@ -274,7 +274,7 @@ public class BillServiceImpl implements BillService {
         }
         for (Timestamp time = TimeComputer.getDay(startTime); time.before(endTime); time = TimeComputer.nextDay(time)) {
             Timestamp temp = time;
-            result.add(Map.of("day", temp, "amount", payBills.stream().filter(bill ->
+            result.add(Map.of("day", temp, "amount", payBills.stream().filter(bill -> bill.getBillTime().equals(temp) ||
                             bill.getBillTime().after(temp) && bill.getBillTime().before(TimeComputer.nextDay(temp)))
                     .map(PayBill::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add)));
         }
@@ -290,7 +290,7 @@ public class BillServiceImpl implements BillService {
         List<IncomeBill> incomeBills = incomeBillMapper.selectIncomeBillByBookIdTime(bookId, startTime, endTime);
         for (Timestamp time = TimeComputer.getDay(startTime); time.before(endTime); time = TimeComputer.nextDay(time)) {
             Timestamp temp = time;
-            result.add(Map.of("day", temp, "amount", incomeBills.stream().filter(bill ->
+            result.add(Map.of("day", temp, "amount", incomeBills.stream().filter(bill -> bill.getBillTime().equals(temp) ||
                             bill.getBillTime().after(temp) && bill.getBillTime().before(TimeComputer.nextDay(temp)))
                     .map(IncomeBill::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add)));
         }

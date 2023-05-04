@@ -89,4 +89,10 @@ public class BillServiceTest {
                 null, new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2023-05-03 19:25:00").getTime()),
                 "退款", null, null);
     }
+
+    @Test
+    public void getDayIncomeStatisticTimeTest() throws ParseException {
+        billService.getDayIncomeStatisticTime(23, new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2023-05-01 00:00:00").getTime()),
+                new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2023-05-31 23:59:59").getTime()));
+    }
 }
