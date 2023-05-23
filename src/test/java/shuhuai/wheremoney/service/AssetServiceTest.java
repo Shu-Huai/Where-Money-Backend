@@ -49,7 +49,7 @@ public class AssetServiceTest {
         }
         for (int i = 0; i < 10; i++) {
             long start = System.currentTimeMillis();
-            List<Map<String, Object>> result = assetService.getDayStatisticTime("lvzhihe_123@qq.com", startTime, endTime);
+            List<Map<String, Object>> result = assetService.getDayStatistic("lvzhihe_123@qq.com", startTime, endTime);
             log.info("result: {}", result);
             assert endTime != null;
             endTime = TimeComputer.prevDay(endTime);

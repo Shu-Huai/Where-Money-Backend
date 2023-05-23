@@ -59,7 +59,7 @@ public class UserController extends BaseController {
             @ApiResponse(responseCode = "422", description = "参数错误"),
             @ApiResponse(responseCode = "500", description = "服务器错误")
     })
-    @RequestMapping(value = "/change-user-name", method = RequestMethod.POST)
+    @RequestMapping(value = "/user-name", method = RequestMethod.PATCH)
     @Operation(summary = "修改用户名")
     public Response<ChangeUserNameResponse> changeUserName(@RequestParam String userName) {
         String oldUserName = TokenValidator.getUser().get("userName");
@@ -74,7 +74,7 @@ public class UserController extends BaseController {
             @ApiResponse(responseCode = "422", description = "参数错误"),
             @ApiResponse(responseCode = "500", description = "服务器错误")
     })
-    @RequestMapping(value = "/change-password", method = RequestMethod.POST)
+    @RequestMapping(value = "/password", method = RequestMethod.PATCH)
     @Operation(summary = "修改密码")
     public Response<Object> changePassword(@RequestParam String password) {
         String userName = TokenValidator.getUser().get("userName");

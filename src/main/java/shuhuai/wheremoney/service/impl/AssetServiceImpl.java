@@ -85,7 +85,7 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public List<Map<String, Object>> getDayStatisticTime(String userName, Timestamp startTime, Timestamp endTime) {
+    public List<Map<String, Object>> getDayStatistic(String userName, Timestamp startTime, Timestamp endTime) {
         if (userName == null || startTime == null || endTime == null) {
             throw new ParamsException("参数错误");
         }
