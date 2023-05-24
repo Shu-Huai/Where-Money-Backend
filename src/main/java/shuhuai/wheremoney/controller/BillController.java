@@ -42,7 +42,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "422", description = "参数错误"),
             @ApiResponse(responseCode = "500", description = "服务器错误")
     })
-    @RequestMapping(value = "/add-bill", method = RequestMethod.POST)
+    @RequestMapping(value = "/bill", method = RequestMethod.POST)
     @Operation(summary = "新建账单")
     public Response<Object> addBill(@RequestParam Integer bookId, Integer inAssetId, Integer outAssetId, Integer payBillId,
                                     Integer billCategoryId, @RequestParam BillType type, @RequestParam BigDecimal amount, BigDecimal transferFee,
@@ -127,7 +127,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/all-bill", method = RequestMethod.GET)
+    @RequestMapping(value = "/all", method = RequestMethod.GET)
     @Operation(summary = "获得指定账本的所有账单")
     public Response<GetAllBillResponse> getBillByBook(@RequestParam Integer bookId) {
         List<BaseBill> billList = billService.getBillByBook(bookId);
@@ -142,7 +142,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/all-bill-time", method = RequestMethod.GET)
+    @RequestMapping(value = "/all/time", method = RequestMethod.GET)
     @Operation(summary = "获得指定账本的所有账单时间")
     public Response<GetAllBillResponse> getBillByBookTIme(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         List<BaseBill> billList = billService.getBillByBookTime(bookId, startTime, endTime);
@@ -157,7 +157,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/category-statistic-time", method = RequestMethod.GET)
+    @RequestMapping(value = "/statistic/category", method = RequestMethod.GET)
     @Operation(summary = "分类统计指定账本的指定时间段的账单")
     public Response<StatisticResponse> getCategoryStatisticTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         List<Map<String, Object>> payStatistic = billService.categoryPayStatisticTime(bookId, startTime, endTime);
@@ -170,7 +170,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/day-statistic-time", method = RequestMethod.GET)
+    @RequestMapping(value = "/statistic/day", method = RequestMethod.GET)
     @Operation(summary = "分日统计指定账本的指定时间段的账单")
     public Response<StatisticResponse> getDayStatisticTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         List<Map<String, Object>> payStatistic = billService.getDayPayStatisticTime(bookId, startTime, endTime);
@@ -183,7 +183,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/add-bill-category", method = RequestMethod.POST)
+    @RequestMapping(value = "/category", method = RequestMethod.POST)
     @Operation(summary = "添加用户自定义账单分类")
     public Response<StatisticResponse> addBillCategory(@RequestParam Integer bookId, @RequestParam String billCategoryName,
                                                        @RequestParam String svg, @RequestParam BillType type) {
@@ -195,7 +195,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/get-bill-category", method = RequestMethod.GET)
+    @RequestMapping(value = "/category", method = RequestMethod.GET)
     @Operation(summary = "查看账本下的所有账单分类")
     public Response<List<BillCategory>> getBillCategory(@RequestParam Integer bookId) {
         List<BillCategory> list = billCategoryService.getBillCategoriesByBook(bookId);
@@ -206,7 +206,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/max-min-pay-time", method = RequestMethod.GET)
+    @RequestMapping(value = "/statistic/pay", method = RequestMethod.GET)
     @Operation(summary = "获得最大最小支出时间")
     public Response<MaxMinResponse> getMaxMinPayTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         Map<String, PayBill> result = billService.getMaxMinPayBill(bookId, startTime, endTime);
@@ -219,7 +219,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/max-min-income-time", method = RequestMethod.GET)
+    @RequestMapping(value = "/statistic/income", method = RequestMethod.GET)
     @Operation(summary = "获得最大最小收入时间")
     public Response<MaxMinResponse> getMaxMinIncomeTime(@RequestParam Integer bookId, @RequestParam Timestamp startTime, @RequestParam Timestamp endTime) {
         Map<String, IncomeBill> result = billService.getMaxMinIncomeBill(bookId, startTime, endTime);
@@ -232,7 +232,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/bill-image", method = RequestMethod.GET)
+    @RequestMapping(value = "/image", method = RequestMethod.GET)
     @Operation(summary = "获得账单图片")
     public Response<byte[]> getBillImage(@RequestParam Integer billId, @RequestParam BillType type) {
         byte[] image = billService.getBillImage(billId, type);
@@ -243,7 +243,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/change-bill", method = RequestMethod.POST)
+    @RequestMapping(value = "/bill", method = RequestMethod.PATCH)
     @Operation(summary = "修改账单")
     public Response<Object> changeBill(@RequestParam Integer id, Integer bookId, BigDecimal amount, Timestamp billTime, String remark, Integer inAssetId,
                                        Integer outAssetId, Integer billCategoryId, Boolean refunded, @RequestParam BillType type, MultipartFile file,
@@ -256,7 +256,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/delete-bill", method = RequestMethod.POST)
+    @RequestMapping(value = "/bill", method = RequestMethod.DELETE)
     @Operation(summary = "删除账单")
     public Response<Object> deleteBill(@RequestParam Integer id, @RequestParam BillType type) {
         billService.deleteBill(id, type);
@@ -267,7 +267,7 @@ public class BillController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/delete-bill-image", method = RequestMethod.POST)
+    @RequestMapping(value = "/image", method = RequestMethod.DELETE)
     @Operation(summary = "删除账单图片")
     public Response<Object> deleteBillImage(@RequestParam Integer id, @RequestParam BillType type) {
         billService.deleteBillImage(id, type);

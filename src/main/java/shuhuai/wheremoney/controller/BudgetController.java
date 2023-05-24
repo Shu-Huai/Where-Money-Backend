@@ -35,7 +35,7 @@ public class BudgetController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/add-budget", method = RequestMethod.POST)
+    @RequestMapping(value = "/budget", method = RequestMethod.POST)
     @Operation(summary = "新建预算", description = "新建预算")
     public Response<Object> addBudget(@RequestParam Integer bookId,
                                       @RequestParam Integer billCategoryId, @RequestParam BigDecimal limit) {
@@ -55,7 +55,7 @@ public class BudgetController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/update-budget", method = RequestMethod.POST)
+    @RequestMapping(value = "/budget", method = RequestMethod.PATCH)
     @Operation(summary = "更新预算", description = "更新预算")
     public Response<Object> updateBudget(@RequestParam Integer budgetId,
                                          Integer billCategoryId, BigDecimal limit, BigDecimal amount, Integer times) {
@@ -80,7 +80,7 @@ public class BudgetController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/get-budgets-by-book", method = RequestMethod.GET)
+    @RequestMapping(value = "/budget/all", method = RequestMethod.GET)
     @Operation(summary = "查看账本全部预算", description = "查看账本全部预算")
     public Response<Object> getBudgets(@RequestParam Integer bookId) {
         return new Response<>(200, "获取预算成功", new GetAllBudgetResponse(budgetService.getBudgetsByBook(bookId)));
@@ -90,7 +90,7 @@ public class BudgetController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/set-book-budget", method = RequestMethod.POST)
+    @RequestMapping(value = "/budget/total", method = RequestMethod.PATCH)
     @Operation(summary = "修改账本总预算", description = "修改账本总预算")
     public Response<Object> setTotalBudgets(@RequestParam Integer bookId, BigDecimal totalBudget, BigDecimal usedBudget) {
         if (totalBudget == null && usedBudget == null) {

@@ -35,7 +35,7 @@ public class BookController extends BaseController {
             @ApiResponse(responseCode = "400", description = "标题已被占用"),
             @ApiResponse(responseCode = "500", description = "服务器错误")
     })
-    @RequestMapping(value = "/add-book", method = RequestMethod.POST)
+    @RequestMapping(value = "/book", method = RequestMethod.POST)
     @Operation(summary = "新建账本")
     public Response<Object> addBook(@RequestParam String title, @RequestParam Integer beginDate) {
         String userName = TokenValidator.getUser().get("userName");
@@ -48,7 +48,7 @@ public class BookController extends BaseController {
             @ApiResponse(responseCode = "422", description = "参数错误"),
             @ApiResponse(responseCode = "404", description = "用户不存在")
     })
-    @RequestMapping(value = "/get-book", method = RequestMethod.GET)
+    @RequestMapping(value = "/all", method = RequestMethod.GET)
     @Operation(summary = "获得账本")
     public Response<GetAllBookResponse> getBook() {
         String userName = TokenValidator.getUser().get("userName");
@@ -110,7 +110,7 @@ public class BookController extends BaseController {
             @ApiResponse(responseCode = "401", description = "token过期"),
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
-    @RequestMapping(value = "/all-bill-category", method = RequestMethod.GET)
+    @RequestMapping(value = "/bill-category", method = RequestMethod.GET)
     @Operation(summary = "获得所有账单分类")
     public Response<Object> getAllBillCategory(@RequestParam Integer bookId, @RequestParam BillType type) {
         return new Response<>(200, "获得所有账单分类", new GetAllBillCategoryResponse(bookService.getAllBillCategory(bookId, type)));
