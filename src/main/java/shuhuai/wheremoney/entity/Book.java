@@ -1,11 +1,15 @@
 package shuhuai.wheremoney.entity;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
+@Setter
+@Getter
 @AllArgsConstructor
 public class Book implements Serializable {
     private Integer id;
@@ -22,59 +26,4 @@ public class Book implements Serializable {
         this.beginDate = beginDate;
     }
 
-    public BigDecimal getUsedBudget() {
-        return usedBudget;
-    }
-
-    public void setUsedBudget(BigDecimal usedBudget) {
-        this.usedBudget = usedBudget;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public Integer getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Integer userId) {
-        this.userId = userId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public Timestamp getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(Timestamp createTime) {
-        this.createTime = createTime;
-    }
-
-    public Integer getBeginDate() {
-        return beginDate;
-    }
-
-    public void setBeginDate(Integer beginDate) {
-        this.beginDate = beginDate;
-    }
-
-    public BigDecimal getTotalBudget() {
-        return totalBudget;
-    }
-
-    public void setTotalBudget(BigDecimal totalBudget) {
-        this.totalBudget = totalBudget;
-    }
 }

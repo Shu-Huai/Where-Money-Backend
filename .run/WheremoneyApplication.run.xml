@@ -1,10 +1,13 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="WheremoneyApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
-    <output_file path="Z:\JetBrains IntelliJ IDEA\Where-Money-Backend\logs\log.log" is_save="true" />
-    <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+  <configuration default="false" name="WhereMoneyApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
     <module name="Where-Money-Backend" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="shuhuai.wheremoney.WhereMoneyApplication" />
-    <option name="UPDATE_ACTION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="shuhuai.wheremoney.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
