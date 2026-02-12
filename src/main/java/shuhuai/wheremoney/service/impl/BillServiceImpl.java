@@ -3,6 +3,7 @@ package shuhuai.wheremoney.service.impl;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import shuhuai.wheremoney.entity.*;
 import shuhuai.wheremoney.mapper.IncomeBillMapper;
@@ -54,6 +55,7 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void addBill(Integer bookId, Integer inAssetId, Integer outAssetId, Integer payBillId, Integer billCategoryId,
                         BillType type, BigDecimal amount, BigDecimal transferFee, Timestamp time, String remark, Boolean refunded, MultipartFile file) {
         byte[] fileBytes = null;
@@ -61,7 +63,7 @@ public class BillServiceImpl implements BillService {
             try {
                 fileBytes = file.getBytes();
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new ServerException("服务器错误");
             }
         }
         switch (type) {
@@ -390,6 +392,7 @@ public class BillServiceImpl implements BillService {
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void changeBill(Integer id, Integer bookId, BigDecimal amount, Timestamp billTime, String remark, Integer inAssetId, Integer outAssetId,
                            Integer billCategoryId, Boolean refunded, BillType type, MultipartFile file, Integer payBillId, BigDecimal transferFee) {
         if (id == null || type == null) {
@@ -400,7 +403,7 @@ public class BillServiceImpl implements BillService {
             try {
                 fileBytes = file.getBytes();
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new ServerException("服务器错误");
             }
         }
         switch (type) {
@@ -587,6 +590,7 @@ public class BillServiceImpl implements BillService {
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteBill(Integer id, BillType type) {
         if (id == null || type == null) {
             throw new ParamsException("参数错误");

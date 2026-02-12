@@ -15,7 +15,7 @@
     <name>Where-Money-Backend</name>
     <description>Where-Money-Backend</description>
     <properties>
-        <java.version>21</java.version>
+        <java.version>23</java.version>
     </properties>
     <dependencies>
         <dependency>

@@ -1,11 +1,15 @@
 package shuhuai.wheremoney.entity;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
+@Setter
+@Getter
 @ToString
 @NoArgsConstructor
 public class IncomeBill extends BaseBill {
@@ -24,19 +28,4 @@ public class IncomeBill extends BaseBill {
         this.billCategoryId = billCategoryId;
     }
 
-    public Integer getIncomeAssetId() {
-        return incomeAssetId;
-    }
-
-    public void setIncomeAssetId(Integer incomeAssetId) {
-        this.incomeAssetId = incomeAssetId;
-    }
-
-    public Integer getBillCategoryId() {
-        return billCategoryId;
-    }
-
-    public void setBillCategoryId(Integer billCategoryId) {
-        this.billCategoryId = billCategoryId;
-    }
 }

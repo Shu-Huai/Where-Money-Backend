@@ -7,6 +7,7 @@ import shuhuai.wheremoney.mapper.BookMapper;
 import shuhuai.wheremoney.mapper.BudgetMapper;
 import shuhuai.wheremoney.service.BudgetService;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
+import shuhuai.wheremoney.service.excep.common.ServerException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -59,7 +60,10 @@ public class BudgetServiceImpl implements BudgetService {
         if (id == null || relativeValue == null) {
             throw new ParamsException("参数错误");
         }
-        bookMapper.updateUsedBudgetRelativeById(id, relativeValue);
+        Integer result = bookMapper.updateUsedBudgetRelativeById(id, relativeValue);
+        if (result == null || result != 1) {
+            throw new ServerException("服务器错误");
+        }
     }
 
     @Override
@@ -67,7 +71,10 @@ public class BudgetServiceImpl implements BudgetService {
         if (billCategoryId == null || relativeValue == null) {
             throw new ParamsException("参数错误");
         }
-        budgetMapper.updateUsedRelativeByCategoryId(billCategoryId, relativeValue);
+        Integer result = budgetMapper.updateUsedRelativeByCategoryId(billCategoryId, relativeValue);
+        if (result == null || result != 1) {
+            throw new ServerException("服务器错误");
+        }
     }
 
     @Override
@@ -75,6 +82,9 @@ public class BudgetServiceImpl implements BudgetService {
         if (billCategoryId == null || relativeValue == null) {
             throw new ParamsException("参数错误");
         }
-        budgetMapper.updateTimesRelativeByCategoryId(billCategoryId, relativeValue);
+        Integer result = budgetMapper.updateTimesRelativeByCategoryId(billCategoryId, relativeValue);
+        if (result == null || result != 1) {
+            throw new ServerException("服务器错误");
+        }
     }
 }

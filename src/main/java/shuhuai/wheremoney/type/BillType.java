@@ -1,5 +1,8 @@
 package shuhuai.wheremoney.type;
 
+import lombok.Getter;
+
+@Getter
 public enum BillType {
     收入("收入"), 支出("支出"), 转账("转账"), 退款("退款");
 
@@ -17,10 +20,6 @@ public enum BillType {
             case "退款" -> 退款;
             default -> null;
         };
-    }
-
-    public String getType() {
-        return type;
     }
 
     public void setType(String type) {

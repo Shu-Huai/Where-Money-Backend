@@ -1,12 +1,16 @@
 package shuhuai.wheremoney.entity;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
+@Setter
+@Getter
 @ToString
 @NoArgsConstructor
 public class PayBill extends BaseBill implements Serializable {
@@ -33,27 +37,4 @@ public class PayBill extends BaseBill implements Serializable {
         this.refunded = refunded;
     }
 
-    public Integer getPayAssetId() {
-        return payAssetId;
-    }
-
-    public void setPayAssetId(Integer payAssetId) {
-        this.payAssetId = payAssetId;
-    }
-
-    public Integer getBillCategoryId() {
-        return billCategoryId;
-    }
-
-    public void setBillCategoryId(Integer billCategoryId) {
-        this.billCategoryId = billCategoryId;
-    }
-
-    public Boolean getRefunded() {
-        return refunded;
-    }
-
-    public void setRefunded(Boolean refunded) {
-        this.refunded = refunded;
-    }
 }
