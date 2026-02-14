@@ -10,6 +10,7 @@ import shuhuai.wheremoney.mapper.BookMapper;
 import shuhuai.wheremoney.mapper.UserMapper;
 import shuhuai.wheremoney.service.BillCategoryService;
 import shuhuai.wheremoney.service.BookService;
+import shuhuai.wheremoney.service.BudgetService;
 import shuhuai.wheremoney.service.excep.book.TitleOccupiedException;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
 import shuhuai.wheremoney.service.excep.common.ServerException;
@@ -28,6 +29,8 @@ public class BookServiceImpl implements BookService {
     private UserMapper userMapper;
     @Resource
     private BillCategoryService billCategoryService;
+    @Resource
+    private BudgetService budgetService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -57,6 +60,12 @@ public class BookServiceImpl implements BookService {
         if (user == null) {
             throw new UserMissingException("用户不存在");
         }
+        List<Book> books = bookMapper.selectBookByUser(user);
+        for (Book book : books) {
+            if (book != null && book.getId() != null) {
+                budgetService.rebuildBudgetByBook(book.getId());
+            }
+        }
         return bookMapper.selectBookByUser(user);
     }
 
@@ -65,6 +74,11 @@ public class BookServiceImpl implements BookService {
         if (id == null) {
             throw new ParamsException("参数错误");
         }
+        Book book = bookMapper.selectBookById(id);
+        if (book == null) {
+            return null;
+        }
+        budgetService.rebuildBudgetByBook(id);
         return bookMapper.selectBookById(id);
     }
 

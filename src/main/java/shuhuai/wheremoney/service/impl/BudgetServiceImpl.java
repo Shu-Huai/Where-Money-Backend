@@ -3,6 +3,7 @@ package shuhuai.wheremoney.service.impl;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import shuhuai.wheremoney.entity.Book;
 import shuhuai.wheremoney.entity.Budget;
 import shuhuai.wheremoney.entity.PayBill;
 import shuhuai.wheremoney.entity.RefundBill;
@@ -15,6 +16,9 @@ import shuhuai.wheremoney.service.excep.common.ParamsException;
 import shuhuai.wheremoney.service.excep.common.ServerException;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,12 +120,26 @@ public class BudgetServiceImpl implements BudgetService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Budget getBudget(Integer id) {
+        if (id == null) {
+            throw new ParamsException("参数错误");
+        }
+        Budget budget = budgetMapper.selectBudgetById(id);
+        if (budget == null) {
+            return null;
+        }
+        rebuildBudgetByBook(budget.getBookId());
         return budgetMapper.selectBudgetById(id);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public List<Budget> getBudgetsByBook(Integer bookId) {
+        if (bookId == null) {
+            throw new ParamsException("参数错误");
+        }
+        rebuildBudgetByBook(bookId);
         return budgetMapper.selectBudgetsByBook(bookId);
     }
 
@@ -183,12 +201,32 @@ public class BudgetServiceImpl implements BudgetService {
         return result;
     }
 
+    private Timestamp[] getCurrentBudgetRange(Integer beginDate) {
+        LocalDate now = LocalDate.now();
+        YearMonth yearMonth = YearMonth.from(now);
+        LocalDate startDate;
+        if (now.getDayOfMonth() >= beginDate) {
+            startDate = yearMonth.atDay(beginDate);
+        } else {
+            startDate = yearMonth.minusMonths(1).atDay(beginDate);
+        }
+        LocalDate endDate = startDate.plusMonths(1);
+        return new Timestamp[]{Timestamp.valueOf(startDate.atStartOfDay()), Timestamp.valueOf(endDate.atStartOfDay())};
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void rebuildBudgetByBook(Integer bookId) {
         if (bookId == null) {
             throw new ParamsException("参数错误");
         }
+        Book book = bookMapper.selectBookById(bookId);
+        if (book == null || book.getBeginDate() == null || book.getBeginDate() < 1 || book.getBeginDate() > 28) {
+            throw new ParamsException("参数错误");
+        }
+        Timestamp[] budgetRange = getCurrentBudgetRange(book.getBeginDate());
+        Timestamp startTime = budgetRange[0];
+        Timestamp endTime = budgetRange[1];
         List<Budget> budgets = budgetMapper.selectBudgetsByBook(bookId);
         Map<Integer, Budget> budgetMap = new HashMap<>();
         if (budgets != null) {
@@ -198,8 +236,8 @@ public class BudgetServiceImpl implements BudgetService {
                 budgetMap.put(budget.getBillCategoryId(), budget);
             }
         }
-        List<PayBill> payBills = payBillMapper.selectPayBillByBookId(bookId);
-        Map<Integer, BigDecimal> refundMap = statisticRefund(refundBillMapper.selectRefundBillByBookId(bookId));
+        List<PayBill> payBills = payBillMapper.selectPayBillByBookIdTime(bookId, startTime, endTime);
+        Map<Integer, BigDecimal> refundMap = statisticRefund(refundBillMapper.selectRefundBillByBookIdTime(bookId, startTime, endTime));
         BigDecimal totalUsed = BigDecimal.ZERO;
         if (payBills != null) {
             for (PayBill payBill : payBills) {
