@@ -136,4 +136,10 @@
         from pay_bill
         where id = #{id,jdbcType=INTEGER}
     </select>
+    <select id="selectPayBillByIdForUpdate" resultMap="PayBillResultMap">
+        select *
+        from pay_bill
+        where id = #{id,jdbcType=INTEGER}
+        for update
+    </select>
 </mapper>

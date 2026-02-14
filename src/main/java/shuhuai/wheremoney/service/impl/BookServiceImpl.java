@@ -2,6 +2,7 @@ package shuhuai.wheremoney.service.impl;
 
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import shuhuai.wheremoney.entity.BillCategory;
 import shuhuai.wheremoney.entity.Book;
 import shuhuai.wheremoney.entity.User;
@@ -29,6 +30,7 @@ public class BookServiceImpl implements BookService {
     private BillCategoryService billCategoryService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void addBook(String userName, String title, Integer beginDate) {
         if (userName == null || title == null || beginDate == null || beginDate < 1 || beginDate > 28) {
             throw new ParamsException("参数错误");

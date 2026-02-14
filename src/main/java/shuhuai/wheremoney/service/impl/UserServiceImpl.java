@@ -2,6 +2,7 @@ package shuhuai.wheremoney.service.impl;
 
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import shuhuai.wheremoney.entity.Book;
 import shuhuai.wheremoney.entity.User;
 import shuhuai.wheremoney.mapper.BookMapper;
@@ -24,6 +25,7 @@ public class UserServiceImpl implements UserService {
     @jakarta.annotation.Resource
     private BillCategoryService billCategoryService;
 
+    @Transactional(rollbackFor = Exception.class)
     public void register(String userName, String password) throws ServerException, UserNameOccupiedException, ParamsException {
         if (userName == null || password == null) {
             throw new ParamsException("参数错误");

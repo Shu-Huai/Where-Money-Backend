@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import shuhuai.wheremoney.entity.BillCategory;
 import shuhuai.wheremoney.mapper.BillCategoryMapper;
 import shuhuai.wheremoney.service.BillCategoryService;
@@ -37,6 +38,7 @@ public class BillCategoryServiceImpl implements BillCategoryService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void addDefaultBillCategory(Integer bookId) {
         JSONArray jsonArray = JsonOperator.getMapFromJson("DefaultBillCategory");
         if (jsonArray == null) {

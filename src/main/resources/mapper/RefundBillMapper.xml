@@ -94,6 +94,7 @@
         where id = #{id,jdbcType=INTEGER}
     </update>
     <update id="updateRefundBillById" parameterType="shuhuai.wheremoney.entity.RefundBill">
+        update refund_bill
         <set>
             book_id = #{bookId,jdbcType=INTEGER},
             pay_bill_id = #{payBillId,jdbcType=INTEGER},

@@ -8,7 +8,7 @@ import java.util.List;
 
 @Mapper
 public interface BudgetMapper {
-    void insertBudget(Budget budget);
+    Integer insertBudget(Budget budget);
 
     Integer updateUsedRelativeByCategoryId(Integer billCategoryId, BigDecimal relativeValue);
 
@@ -16,9 +16,11 @@ public interface BudgetMapper {
 
     List<Budget> selectBudgetsByBook(Integer bookId);
 
+    BigDecimal selectLimitSumByBook(Integer bookId);
+
     Budget selectBudgetById(Integer id);
 
-    void updateBudgetById(Budget budget);
+    Integer updateBudgetById(Budget budget);
 
     Budget selectBudgetByCategoryId(Integer categoryId);
 }

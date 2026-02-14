@@ -55,6 +55,12 @@
         from budget
         where book_id = #{bookId,jdbcType=INTEGER}
     </select>
+    <select id="selectLimitSumByBook"
+            resultType="java.math.BigDecimal">
+        select ifnull(sum(limit_amount), 0)
+        from budget
+        where book_id = #{bookId,jdbcType=INTEGER}
+    </select>
     <select id="selectBudgetById"
             resultMap="BudgetResultMap">
         select *
@@ -74,10 +80,10 @@
                 bill_category_id = #{billCategoryId,jdbcType=INTEGER},
             </if>
             <if test="used != null">
-                used = #{used,jdbcType=VARCHAR},
+                used = #{used,jdbcType=DECIMAL},
             </if>
             <if test="limit != null">
-                limit_amount = #{limit,jdbcType=VARCHAR},
+                limit_amount = #{limit,jdbcType=DECIMAL},
             </if>
             <if test="times != null">
                 times = #{times,jdbcType=INTEGER},

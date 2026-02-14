@@ -10,15 +10,25 @@ public interface BudgetService {
 
     void updateBudget(Budget budget);
 
+    void addBudgetValidated(Integer bookId, Integer billCategoryId, BigDecimal limit);
+
+    void updateBudgetValidated(Integer budgetId, Integer billCategoryId, BigDecimal limit, BigDecimal amount, Integer times);
+
     Budget getBudget(Integer id);
 
     List<Budget> getBudgetsByBook(Integer bookId);
 
     BigDecimal getTotalBudgetByBook(Integer bookId);
 
+    BigDecimal getAllocatedLimitByBook(Integer bookId);
+
     void updateTotalBudgetByBook(Integer bookId, BigDecimal totalBudget, BigDecimal usedBudget);
 
+    boolean updateTotalBudgetValidated(Integer bookId, BigDecimal totalBudget, BigDecimal usedBudget);
+
     Budget selectBudgetByCategoryId(Integer billCategoryId);
+
+    void rebuildBudgetByBook(Integer bookId);
 
     void changeTotalUsedBudgetRelative(Integer id, BigDecimal relativeValue);
 

@@ -54,6 +54,46 @@ public class BillServiceImpl implements BillService {
         }
     }
 
+    private BigDecimal sumRefundAmount(Integer payBillId, Integer excludeRefundId) {
+        BigDecimal total = BigDecimal.ZERO;
+        List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(payBillId);
+        if (refundBills == null) {
+            return total;
+        }
+        for (RefundBill refundBill : refundBills) {
+            if (excludeRefundId != null && excludeRefundId.equals(refundBill.getId())) {
+                continue;
+            }
+            total = total.add(refundBill.getAmount());
+        }
+        return total;
+    }
+
+    private void refreshPayBillRefunded(Integer payBillId) {
+        List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(payBillId);
+        boolean refunded = refundBills != null && !refundBills.isEmpty();
+        Integer updateResult = payBillMapper.updatePayBillByIdSelective(new PayBill(payBillId, refunded));
+        if (updateResult == null || updateResult != 1) {
+            throw new ServerException("服务器错误");
+        }
+        if (redisConnector.existObject("pay_bill:" + payBillId)) {
+            PayBill payBill = (PayBill) redisConnector.readObject("pay_bill:" + payBillId);
+            if (payBill != null) {
+                payBill.setRefunded(refunded);
+                writeToRedis("pay_bill:" + payBillId, payBill);
+            }
+        }
+    }
+
+    private void rebuildBudgetByBooks(Integer... bookIds) {
+        Set<Integer> ids = new HashSet<>();
+        for (Integer bookId : bookIds) {
+            if (bookId != null && ids.add(bookId)) {
+                budgetService.rebuildBudgetByBook(bookId);
+            }
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addBill(Integer bookId, Integer inAssetId, Integer outAssetId, Integer payBillId, Integer billCategoryId,
@@ -71,13 +111,11 @@ public class BillServiceImpl implements BillService {
                 if (bookId == null || amount == null || outAssetId == null || billCategoryId == null) {
                     throw new ParamsException("参数错误");
                 }
-                budgetService.changeTotalUsedBudgetRelative(bookId, amount);
-                budgetService.changeCategoryUsedBudgetRelative(billCategoryId, amount);
-                budgetService.changeCategoryTimesRelative(billCategoryId, 1);
                 PayBill payBill = new PayBill(bookId, outAssetId, billCategoryId, amount, time, remark, false, fileBytes);
                 assetService.changeBalanceRelative(outAssetId, amount.negate());
                 payBillMapper.insertPayBillSelective(payBill);
                 writeToRedis("pay_bill:" + payBill.getId(), payBill);
+                rebuildBudgetByBooks(bookId);
             }
             case 收入 -> {
                 if (bookId == null || amount == null || inAssetId == null || billCategoryId == null) {
@@ -99,18 +137,24 @@ public class BillServiceImpl implements BillService {
                 writeToRedis("transfer_bill:" + transferBill.getId(), transferBill);
             }
             case 退款 -> {
-                if (bookId == null || amount == null || payBillId == null || inAssetId == null) {
+                if (bookId == null || amount == null || payBillId == null || inAssetId == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
                     throw new ParamsException("参数错误");
                 }
-                changeBill(payBillId, null, null, null, null, null, null, null,
-                        Boolean.TRUE, BillType.支出, null, null, null);
-                budgetService.changeTotalUsedBudgetRelative(bookId, amount.negate());
-                budgetService.changeCategoryUsedBudgetRelative(billCategoryId, amount.negate());
-                budgetService.changeCategoryTimesRelative(billCategoryId, -1);
+                PayBill payBill = payBillMapper.selectPayBillByIdForUpdate(payBillId);
+                if (payBill == null || !Objects.equals(payBill.getBookId(), bookId)) {
+                    throw new ParamsException("参数错误");
+                }
+                BigDecimal refundedAmount = sumRefundAmount(payBillId, null);
+                BigDecimal remainAmount = payBill.getAmount().subtract(refundedAmount);
+                if (remainAmount.compareTo(BigDecimal.ZERO) <= 0 || amount.compareTo(remainAmount) > 0) {
+                    throw new ParamsException("退款金额超过可退金额");
+                }
                 RefundBill refundBill = new RefundBill(bookId, payBillId, inAssetId, amount, time, remark, fileBytes);
                 assetService.changeBalanceRelative(inAssetId, amount);
                 refundBillMapper.insertRefundBillSelective(refundBill);
+                refreshPayBillRefunded(payBillId);
                 writeToRedis("refund_bill:" + refundBill.getId(), refundBill);
+                rebuildBudgetByBooks(bookId);
             }
         }
     }
@@ -325,7 +369,7 @@ public class BillServiceImpl implements BillService {
                 min = payBill;
             }
         }
-        return new HashMap<>(Map.of("max", max == null ? payBills.get(0) : max, "min", min == null ? payBills.get(0) : min));
+        return new HashMap<>(Map.of("max", max == null ? payBills.getFirst() : max, "min", min == null ? payBills.getFirst() : min));
     }
 
     @Override
@@ -349,7 +393,7 @@ public class BillServiceImpl implements BillService {
                 min = incomeBill;
             }
         }
-        return new HashMap<>(Map.of("max", max == null ? incomeBills.get(0) : max, "min", min == null ? incomeBills.get(0) : min));
+        return new HashMap<>(Map.of("max", max == null ? incomeBills.getFirst() : max, "min", min == null ? incomeBills.getFirst() : min));
     }
 
     @Override
@@ -412,11 +456,14 @@ public class BillServiceImpl implements BillService {
                 if (originBill == null) {
                     throw new ParamsException("参数错误");
                 }
+                Integer originBookId = originBill.getBookId();
                 PayBill newBill = new PayBill(id, bookId, outAssetId, billCategoryId, amount, billTime, remark, refunded, fileBytes);
                 if (newBill.getRefunded() != null && originBill.getRefunded() && !newBill.getRefunded()) {
                     List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(originBill.getId());
-                    for (RefundBill refundBill : refundBills) {
-                        deleteBill(refundBill);
+                    if (refundBills != null) {
+                        for (RefundBill refundBill : refundBills) {
+                            deleteBill(refundBill);
+                        }
                     }
                 }
                 if (newBill.getPayAssetId() != null && !Objects.equals(newBill.getPayAssetId(), originBill.getPayAssetId())) {
@@ -435,6 +482,8 @@ public class BillServiceImpl implements BillService {
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
+                Integer currentBookId = newBill.getBookId() == null ? originBookId : newBill.getBookId();
+                rebuildBudgetByBooks(originBookId, currentBookId);
             }
             case 收入 -> {
                 IncomeBill originBill = (IncomeBill) getBill(id, BillType.收入);
@@ -464,9 +513,27 @@ public class BillServiceImpl implements BillService {
                 if (originBill == null) {
                     throw new ParamsException("参数错误");
                 }
+                Integer originBookId = originBill.getBookId();
                 RefundBill newBill = new RefundBill(id, bookId, payBillId, inAssetId, amount, billTime, remark, fileBytes);
                 if (newBill.getPayBillId() != null && !Objects.equals(newBill.getPayBillId(), originBill.getPayBillId())) {
                     throw new ParamsException("参数错误");
+                }
+                PayBill payBill = payBillMapper.selectPayBillByIdForUpdate(originBill.getPayBillId());
+                if (payBill == null) {
+                    throw new ParamsException("参数错误");
+                }
+                Integer currentBookId = newBill.getBookId() == null ? originBookId : newBill.getBookId();
+                if (!Objects.equals(currentBookId, payBill.getBookId())) {
+                    throw new ParamsException("参数错误");
+                }
+                BigDecimal targetAmount = newBill.getAmount() == null ? originBill.getAmount() : newBill.getAmount();
+                if (targetAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new ParamsException("参数错误");
+                }
+                BigDecimal refundedAmountWithoutCurrent = sumRefundAmount(originBill.getPayBillId(), originBill.getId());
+                BigDecimal remainAmount = payBill.getAmount().subtract(refundedAmountWithoutCurrent);
+                if (remainAmount.compareTo(BigDecimal.ZERO) <= 0 || targetAmount.compareTo(remainAmount) > 0) {
+                    throw new ParamsException("退款金额超过可退金额");
                 }
                 if (newBill.getRefundAssetId() != null && !Objects.equals(newBill.getRefundAssetId(), originBill.getRefundAssetId())) {
                     assetService.changeBalanceRelative(originBill.getRefundAssetId(), originBill.getAmount().negate());
@@ -484,6 +551,8 @@ public class BillServiceImpl implements BillService {
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
+                refreshPayBillRefunded(originBill.getPayBillId());
+                rebuildBudgetByBooks(originBookId, currentBookId, payBill.getBookId());
             }
             case 转账 -> {
                 TransferBill originBill = (TransferBill) getBill(id, BillType.转账);
@@ -542,8 +611,8 @@ public class BillServiceImpl implements BillService {
         Integer result = 0;
         if (bill instanceof PayBill payBill) {
             assetService.changeBalanceRelative(payBill.getPayAssetId(), payBill.getAmount());
-            if (payBill.getRefunded()) {
-                List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(payBill.getId());
+            List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(payBill.getId());
+            if (refundBills != null && !refundBills.isEmpty()) {
                 for (RefundBill refundBill : refundBills) {
                     deleteBill(refundBill);
                 }
@@ -571,17 +640,11 @@ public class BillServiceImpl implements BillService {
             assetService.changeBalanceRelative(refundBill.getRefundAssetId(), refundBill.getAmount().negate());
             // 删除数据库里的退款记录
             result = refundBillMapper.deleteRefundBillById(refundBill.getId());
-            // 修改数据库的支出记录
-            result &= payBillMapper.updatePayBillByIdSelective(new PayBill(refundBill.getPayBillId(), false));
             // 如果在redis里
             if (redisConnector.existObject("refund_bill:" + refundBill.getId())) {
                 redisConnector.deleteObject("refund_bill:" + refundBill.getId());
             }
-            if (redisConnector.existObject("pay_bill:" + refundBill.getPayBillId())){
-                PayBill payBill= (PayBill) redisConnector.readObject("pay_bill:" + refundBill.getPayBillId());
-                payBill.setRefunded(false);
-                writeToRedis("pay_bill:" + payBill.getId(), payBill);
-            }
+            refreshPayBillRefunded(refundBill.getPayBillId());
         }
         if (result != 1) {
             throw new ServerException("服务器错误");
@@ -601,7 +664,9 @@ public class BillServiceImpl implements BillService {
                 if (payBill == null) {
                     throw new ParamsException("参数错误");
                 }
+                Integer bookId = payBill.getBookId();
                 deleteBill(payBill);
+                rebuildBudgetByBooks(bookId);
             }
             case 收入 -> {
                 IncomeBill incomeBill = (IncomeBill) getBill(id, type);
@@ -615,7 +680,9 @@ public class BillServiceImpl implements BillService {
                 if (refundBill == null) {
                     throw new ParamsException("参数错误");
                 }
+                Integer bookId = refundBill.getBookId();
                 deleteBill(refundBill);
+                rebuildBudgetByBooks(bookId);
             }
             case 转账 -> {
                 TransferBill transferBill = (TransferBill) getBill(id, type);
@@ -672,3 +739,4 @@ public class BillServiceImpl implements BillService {
         }
     }
 }
+
