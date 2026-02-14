@@ -98,8 +98,10 @@ public class AssetServiceImpl implements AssetService {
         List<Map<String, Object>> result = new ArrayList<>();
         List<BaseBill> billTimeList = new ArrayList<>();
         BillService billService = BeanGetter.getBean(BillService.class);
+        // Backtrack from current total: bills between endTime and now are also required.
+        Timestamp backtrackEndTime = TimeComputer.nextDay(TimeComputer.getDay(TimeComputer.getNow()));
         for (Book book : bookList) {
-            billTimeList.addAll(billService.getBillByBookTime(book.getId(), startTime, endTime));
+            billTimeList.addAll(billService.getBillByBookTime(book.getId(), startTime, backtrackEndTime));
         }
         Map<Timestamp, List<BaseBill>> billTimeMap = new HashMap<>();
         for (BaseBill bill : billTimeList) {

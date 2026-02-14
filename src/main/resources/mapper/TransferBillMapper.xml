@@ -58,7 +58,7 @@
                 #{transferFee,jdbcType=DECIMAL},
             </if>
             <if test="billTime != null">
-                #{billTime,jdbcType=DATE},
+                #{billTime,jdbcType=TIMESTAMP},
             </if>
             <if test="remark != null">
                 #{remark,jdbcType=VARCHAR},

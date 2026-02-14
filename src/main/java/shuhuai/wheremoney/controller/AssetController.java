@@ -16,6 +16,7 @@ import shuhuai.wheremoney.response.asset.DayStatisticTimeResponse;
 import shuhuai.wheremoney.response.asset.GetAllAssetResponse;
 import shuhuai.wheremoney.response.asset.GetAssetResponse;
 import shuhuai.wheremoney.service.AssetService;
+import shuhuai.wheremoney.service.excep.common.ParamsException;
 import shuhuai.wheremoney.type.AssetType;
 import shuhuai.wheremoney.utils.TokenValidator;
 
@@ -57,13 +58,30 @@ public class AssetController extends BaseController {
     public Response<Object> updateAsset(@RequestParam Integer assetId, BigDecimal balance, String assetName,
                                         Integer billDate, Integer repayDate, BigDecimal quota, Boolean inTotal, String svg) {
         Asset oldAsset = assetService.getAsset(assetId);
-        if (balance != null) oldAsset.setBalance(balance);
-        if (assetName != null) oldAsset.setAssetName(assetName);
-        if (billDate != null) oldAsset.setBillDate(billDate);
-        if (repayDate != null) oldAsset.setRepayDate(repayDate);
-        if (quota != null) oldAsset.setQuota(quota);
-        if (inTotal != null) oldAsset.setInTotal(inTotal);
-        if (svg != null) oldAsset.setSvg(svg);
+        if (oldAsset == null) {
+            throw new ParamsException("资产不存在");
+        }
+        if (balance != null) {
+            oldAsset.setBalance(balance);
+        }
+        if (assetName != null) {
+            oldAsset.setAssetName(assetName);
+        }
+        if (billDate != null) {
+            oldAsset.setBillDate(billDate);
+        }
+        if (repayDate != null) {
+            oldAsset.setRepayDate(repayDate);
+        }
+        if (quota != null) {
+            oldAsset.setQuota(quota);
+        }
+        if (inTotal != null) {
+            oldAsset.setInTotal(inTotal);
+        }
+        if (svg != null) {
+            oldAsset.setSvg(svg);
+        }
         assetService.updateAsset(oldAsset);
         return new Response<>(200, "修改资产成功", null);
     }

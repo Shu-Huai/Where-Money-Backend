@@ -94,6 +94,35 @@ public class BillServiceImpl implements BillService {
         }
     }
 
+    private void validatePositiveAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ParamsException("参数错误");
+        }
+    }
+
+    private void validateTransferAmountAndFee(BigDecimal amount, BigDecimal transferFee) {
+        validatePositiveAmount(amount);
+        if (transferFee != null && transferFee.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ParamsException("参数错误");
+        }
+    }
+
+    private String getBillCacheKey(BillType type, Integer id) {
+        return switch (type) {
+            case 支出 -> "pay_bill:" + id;
+            case 收入 -> "income_bill:" + id;
+            case 退款 -> "refund_bill:" + id;
+            case 转账 -> "transfer_bill:" + id;
+        };
+    }
+
+    private void evictBillCache(BillType type, Integer id) {
+        String key = getBillCacheKey(type, id);
+        if (redisConnector.existObject(key)) {
+            redisConnector.deleteObject(key);
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addBill(Integer bookId, Integer inAssetId, Integer outAssetId, Integer payBillId, Integer billCategoryId,
@@ -108,9 +137,10 @@ public class BillServiceImpl implements BillService {
         }
         switch (type) {
             case 支出 -> {
-                if (bookId == null || amount == null || outAssetId == null || billCategoryId == null) {
+                if (bookId == null || outAssetId == null || billCategoryId == null) {
                     throw new ParamsException("参数错误");
                 }
+                validatePositiveAmount(amount);
                 PayBill payBill = new PayBill(bookId, outAssetId, billCategoryId, amount, time, remark, false, fileBytes);
                 assetService.changeBalanceRelative(outAssetId, amount.negate());
                 payBillMapper.insertPayBillSelective(payBill);
@@ -118,21 +148,24 @@ public class BillServiceImpl implements BillService {
                 rebuildBudgetByBooks(bookId);
             }
             case 收入 -> {
-                if (bookId == null || amount == null || inAssetId == null || billCategoryId == null) {
+                if (bookId == null || inAssetId == null || billCategoryId == null) {
                     throw new ParamsException("参数错误");
                 }
+                validatePositiveAmount(amount);
                 assetService.changeBalanceRelative(inAssetId, amount);
                 IncomeBill incomeBill = new IncomeBill(bookId, inAssetId, billCategoryId, amount, time, remark, fileBytes);
                 incomeBillMapper.insertIncomeBillSelective(incomeBill);
                 writeToRedis("income_bill:" + incomeBill.getId(), incomeBill);
             }
             case 转账 -> {
-                if (bookId == null || amount == null || inAssetId == null || outAssetId == null) {
+                if (bookId == null || inAssetId == null || outAssetId == null) {
                     throw new ParamsException("参数错误");
                 }
+                validateTransferAmountAndFee(amount, transferFee);
                 assetService.changeBalanceRelative(inAssetId, amount.subtract(transferFee != null ? transferFee : BigDecimal.ZERO));
                 assetService.changeBalanceRelative(outAssetId, amount.negate());
-                TransferBill transferBill = new TransferBill(bookId, inAssetId, outAssetId, amount, transferFee, time, remark, fileBytes);
+                TransferBill transferBill = new TransferBill(bookId, inAssetId, outAssetId, amount,
+                        transferFee == null ? BigDecimal.ZERO : transferFee, time, remark, fileBytes);
                 transferBillMapper.insertTransferBillSelective(transferBill);
                 writeToRedis("transfer_bill:" + transferBill.getId(), transferBill);
             }
@@ -458,11 +491,36 @@ public class BillServiceImpl implements BillService {
                 }
                 Integer originBookId = originBill.getBookId();
                 PayBill newBill = new PayBill(id, bookId, outAssetId, billCategoryId, amount, billTime, remark, refunded, fileBytes);
+                Integer currentBookId = newBill.getBookId() == null ? originBookId : newBill.getBookId();
+                BigDecimal targetAmount = newBill.getAmount() == null ? originBill.getAmount() : newBill.getAmount();
+                validatePositiveAmount(targetAmount);
+                List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(originBill.getId());
+                if (refundBills == null) {
+                    refundBills = new ArrayList<>();
+                }
                 if (newBill.getRefunded() != null && originBill.getRefunded() && !newBill.getRefunded()) {
-                    List<RefundBill> refundBills = refundBillMapper.selectRefundBillByPayBillId(originBill.getId());
-                    if (refundBills != null) {
+                    for (RefundBill refundBill : refundBills) {
+                        deleteBill(refundBill);
+                    }
+                } else {
+                    BigDecimal refundedAmount = refundBills.stream().map(RefundBill::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    if (refundedAmount.compareTo(targetAmount) > 0) {
+                        throw new ParamsException("退款总额超过支出金额");
+                    }
+                    if (!Objects.equals(currentBookId, originBookId) && !refundBills.isEmpty()) {
                         for (RefundBill refundBill : refundBills) {
-                            deleteBill(refundBill);
+                            Integer updateRefundResult = refundBillMapper.updateRefundBillByIdSelective(
+                                    new RefundBill(refundBill.getId(), currentBookId, null, null, null, null, null, null));
+                            if (updateRefundResult == null || updateRefundResult != 1) {
+                                throw new ServerException("服务器错误");
+                            }
+                            if (redisConnector.existObject("refund_bill:" + refundBill.getId())) {
+                                RefundBill cacheRefundBill = (RefundBill) redisConnector.readObject("refund_bill:" + refundBill.getId());
+                                if (cacheRefundBill != null) {
+                                    cacheRefundBill.setBookId(currentBookId);
+                                    writeToRedis("refund_bill:" + refundBill.getId(), cacheRefundBill);
+                                }
+                            }
                         }
                     }
                 }
@@ -482,7 +540,6 @@ public class BillServiceImpl implements BillService {
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
-                Integer currentBookId = newBill.getBookId() == null ? originBookId : newBill.getBookId();
                 rebuildBudgetByBooks(originBookId, currentBookId);
             }
             case 收入 -> {
@@ -491,6 +548,8 @@ public class BillServiceImpl implements BillService {
                     throw new ParamsException("参数错误");
                 }
                 IncomeBill newBill = new IncomeBill(id, bookId, inAssetId, billCategoryId, amount, billTime, remark, fileBytes);
+                BigDecimal targetAmount = newBill.getAmount() == null ? originBill.getAmount() : newBill.getAmount();
+                validatePositiveAmount(targetAmount);
                 if (newBill.getIncomeAssetId() != null && !Objects.equals(newBill.getIncomeAssetId(), originBill.getIncomeAssetId())) {
                     assetService.changeBalanceRelative(originBill.getIncomeAssetId(), originBill.getAmount().negate());
                     if (newBill.getAmount() != null && originBill.getAmount().compareTo(newBill.getAmount()) != 0) {
@@ -560,51 +619,27 @@ public class BillServiceImpl implements BillService {
                     throw new ParamsException("参数错误");
                 }
                 TransferBill newBill = new TransferBill(id, bookId, inAssetId, outAssetId, amount, transferFee, billTime, remark, fileBytes);
+                Integer targetInAssetId = newBill.getInAssetId() == null ? originBill.getInAssetId() : newBill.getInAssetId();
+                Integer targetOutAssetId = newBill.getOutAssetId() == null ? originBill.getOutAssetId() : newBill.getOutAssetId();
+                BigDecimal targetAmount = newBill.getAmount() == null ? originBill.getAmount() : newBill.getAmount();
                 BigDecimal originTransferFee = originBill.getTransferFee() != null ? originBill.getTransferFee() : BigDecimal.ZERO;
-                BigDecimal newTransferFee = newBill.getTransferFee() != null ? newBill.getTransferFee() : originTransferFee;
-                if (newBill.getInAssetId() != null && !Objects.equals(newBill.getInAssetId(), originBill.getInAssetId()) &&
-                        newBill.getOutAssetId() != null && !Objects.equals(newBill.getOutAssetId(), originBill.getOutAssetId())) {
-                    assetService.changeBalanceRelative(originBill.getOutAssetId(), originBill.getAmount());
-                    assetService.changeBalanceRelative(originBill.getInAssetId(), (originBill.getAmount().subtract(originTransferFee)).negate());
-                    if (newBill.getAmount() != null && originBill.getAmount().compareTo(newBill.getAmount()) != 0) {
-                        assetService.changeBalanceRelative(newBill.getOutAssetId(), newBill.getAmount().negate());
-                        assetService.changeBalanceRelative(newBill.getInAssetId(), newBill.getAmount().subtract(newTransferFee));
-                    } else {
-                        assetService.changeBalanceRelative(newBill.getOutAssetId(), originBill.getAmount().negate());
-                        assetService.changeBalanceRelative(newBill.getInAssetId(), originBill.getAmount().subtract(newTransferFee));
-                    }
-                } else if (newBill.getOutAssetId() != null && Objects.equals(newBill.getOutAssetId(), originBill.getOutAssetId())) {
-                    assetService.changeBalanceRelative(originBill.getOutAssetId(), originBill.getAmount());
-                    if (newBill.getAmount() != null && originBill.getAmount().compareTo(newBill.getAmount()) != 0) {
-                        assetService.changeBalanceRelative(newBill.getOutAssetId(), newBill.getAmount().negate());
-                        assetService.changeBalanceRelative(newBill.getInAssetId(),
-                                newBill.getAmount().subtract(newTransferFee).subtract(originBill.getAmount().subtract(originTransferFee)));
-                    } else {
-                        assetService.changeBalanceRelative(newBill.getOutAssetId(), originBill.getAmount().negate());
-                    }
-                } else if (newBill.getInAssetId() != null && Objects.equals(newBill.getInAssetId(), originBill.getInAssetId())) {
-                    assetService.changeBalanceRelative(originBill.getInAssetId(), (originBill.getAmount().subtract(originTransferFee)).negate());
-                    if (newBill.getAmount() != null && originBill.getAmount().compareTo(newBill.getAmount()) != 0) {
-                        assetService.changeBalanceRelative(newBill.getOutAssetId(), (newBill.getAmount().subtract(originBill.getAmount())).negate());
-                        assetService.changeBalanceRelative(newBill.getInAssetId(), newBill.getAmount().subtract(newTransferFee));
-                    } else {
-                        assetService.changeBalanceRelative(newBill.getInAssetId(), originBill.getAmount().subtract(newTransferFee));
-                    }
-                } else {
-                    if (newBill.getAmount() != null && originBill.getAmount().compareTo(newBill.getAmount()) != 0) {
-                        assetService.changeBalanceRelative(originBill.getOutAssetId(), originBill.getAmount().subtract(newBill.getAmount()));
-                        assetService.changeBalanceRelative(originBill.getInAssetId(),
-                                newBill.getAmount().subtract(newTransferFee).subtract(originBill.getAmount().subtract(originTransferFee)));
-                    } else {
-                        assetService.changeBalanceRelative(originBill.getInAssetId(), originTransferFee.subtract(newTransferFee));
-                    }
+                BigDecimal targetTransferFee = newBill.getTransferFee() != null ? newBill.getTransferFee() : originTransferFee;
+                if (originBill.getInAssetId() == null || originBill.getOutAssetId() == null || originBill.getAmount() == null) {
+                    throw new ParamsException("参数错误");
                 }
+                validateTransferAmountAndFee(targetAmount, targetTransferFee);
+                // 统一计算：先回滚旧转账影响，再应用新转账影响，避免只改入账或只改出账时遗漏迁移。
+                assetService.changeBalanceRelative(originBill.getOutAssetId(), originBill.getAmount());
+                assetService.changeBalanceRelative(originBill.getInAssetId(), originBill.getAmount().subtract(originTransferFee).negate());
+                assetService.changeBalanceRelative(targetOutAssetId, targetAmount.negate());
+                assetService.changeBalanceRelative(targetInAssetId, targetAmount.subtract(targetTransferFee));
                 Integer result = transferBillMapper.updateTransferBillByIdSelective(newBill);
                 if (result != 1) {
                     throw new ServerException("服务器错误");
                 }
             }
         }
+        evictBillCache(type, id);
     }
 
     private void deleteBill(BaseBill bill) {

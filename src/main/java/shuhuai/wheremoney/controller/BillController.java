@@ -17,6 +17,7 @@ import shuhuai.wheremoney.response.bill.*;
 import shuhuai.wheremoney.service.AssetService;
 import shuhuai.wheremoney.service.BillCategoryService;
 import shuhuai.wheremoney.service.BillService;
+import shuhuai.wheremoney.service.excep.common.ParamsException;
 import shuhuai.wheremoney.type.BillType;
 
 import java.math.BigDecimal;
@@ -120,6 +121,9 @@ public class BillController extends BaseController {
     @Operation(summary = "获得账单")
     public Response<BaseGetBillResponse> getBill(@RequestParam Integer id, @RequestParam BillType type) {
         BaseBill bill = billService.getBill(id, type);
+        if (bill == null) {
+            throw new ParamsException("账单不存在");
+        }
         return new Response<>(200, "获得账单成功", entityToResponse(bill));
     }
 
