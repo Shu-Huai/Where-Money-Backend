@@ -24,4 +24,10 @@ public interface BookService {
     BigDecimal getRefundMonth(Integer bookId, Timestamp month);
 
     List<BillCategory> getAllBillCategory(Integer bookId, BillType type);
+
+    void addBillCategory(Integer bookId, String billCategoryName, String svg, BillType type);
+
+    void deleteBillCategory(Integer billCategoryId);
+
+    void updateBillCategory(Integer id, String billCategoryName, String svg, BillType type, Integer bookId);
 }

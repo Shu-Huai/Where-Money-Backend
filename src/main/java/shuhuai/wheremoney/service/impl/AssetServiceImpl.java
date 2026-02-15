@@ -94,7 +94,13 @@ public class AssetServiceImpl implements AssetService {
             throw new ParamsException("参数错误");
         }
         BigDecimal curTotal = assetMapper.selectTotalAssetByUserId(user.getId());
+        if (curTotal == null) {
+            curTotal = BigDecimal.ZERO;
+        }
         List<Book> bookList = bookMapper.selectBookByUser(user);
+        if (bookList == null) {
+            bookList = new ArrayList<>();
+        }
         List<Map<String, Object>> result = new ArrayList<>();
         List<BaseBill> billTimeList = new ArrayList<>();
         BillService billService = BeanGetter.getBean(BillService.class);
@@ -115,7 +121,7 @@ public class AssetServiceImpl implements AssetService {
             }
         }
         for (Timestamp curTime = TimeComputer.getDay(TimeComputer.getNow()); !curTime.before(TimeComputer.getDay(startTime)); curTime = TimeComputer.prevDay(curTime)) {
-            BigDecimal dayTotal = new BigDecimal(0);
+            BigDecimal dayTotal = BigDecimal.ZERO;
             List<BaseBill> dayBillList = billTimeMap.get(curTime);
             if (dayBillList != null) {
                 for (BaseBill bill : dayBillList) {

@@ -15,4 +15,10 @@ public interface BillCategoryMapper {
     List<BillCategory> selectBillCategoryByBookType(Integer bookId, BillType type);
 
     BillCategory selectBillCategoryById(Integer id);
+
+    Integer deleteBillCategory(Integer id);
+
+    Integer updateBillCategorySelective(BillCategory billCategory);
+
+    BillCategory selectBillCategoryByBookIdNameType(Integer bookId, String billCategoryName, BillType type);
 }

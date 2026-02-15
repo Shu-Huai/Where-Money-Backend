@@ -23,4 +23,10 @@ public interface PayBillMapper {
     PayBill selectPayBillById(Integer id);
 
     PayBill selectPayBillByIdForUpdate(Integer id);
+
+    List<PayBill> selectPayBillByBookIdCategory(Integer bookId, Integer billCategoryId);
+
+    List<Integer> selectPayBillIdsByBookIdCategory(Integer bookId, Integer billCategoryId);
+
+    Integer updatePayBillCategoryByBookIdCategory(Integer bookId, Integer oldBillCategoryId, Integer newBillCategoryId);
 }

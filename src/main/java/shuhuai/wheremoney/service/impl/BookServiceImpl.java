@@ -1,6 +1,7 @@
 package shuhuai.wheremoney.service.impl;
 
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import shuhuai.wheremoney.entity.BillCategory;
@@ -23,6 +24,8 @@ import java.util.List;
 
 @Service
 public class BookServiceImpl implements BookService {
+    @Value("${default.svg}")
+    private String defaultSvg;
     @Resource
     private BookMapper bookMapper;
     @Resource
@@ -120,5 +123,32 @@ public class BookServiceImpl implements BookService {
             throw new ParamsException("参数错误");
         }
         return billCategoryService.getBillCategoriesByBookType(bookId, type);
+    }
+
+    @Override
+    public void addBillCategory(Integer bookId, String billCategoryName, String svg, BillType type) {
+        if (bookId == null || billCategoryName == null || type == null) {
+            throw new ParamsException("参数错误");
+        }
+        if (svg == null) {
+            svg = defaultSvg;
+        }
+        billCategoryService.addBillCategory(bookId, billCategoryName, svg, type);
+    }
+
+    @Override
+    public void deleteBillCategory(Integer id) {
+        if (id == null) {
+            throw new ParamsException("参数错误");
+        }
+        billCategoryService.deleteBillCategory(id);
+    }
+
+    @Override
+    public void updateBillCategory(Integer id, String billCategoryName, String svg, BillType type, Integer bookId) {
+        if (id == null) {
+            throw new ParamsException("参数错误");
+        }
+        billCategoryService.updateBillCategory(id, billCategoryName, svg, type, bookId);
     }
 }

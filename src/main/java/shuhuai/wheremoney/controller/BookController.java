@@ -19,7 +19,6 @@ import shuhuai.wheremoney.service.BookService;
 import shuhuai.wheremoney.type.BillType;
 import shuhuai.wheremoney.utils.TokenValidator;
 
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @RestController
@@ -115,5 +114,42 @@ public class BookController extends BaseController {
     @Operation(summary = "获得所有账单分类")
     public Response<Object> getAllBillCategory(@RequestParam Integer bookId, @RequestParam BillType type) {
         return new Response<>(200, "获得所有账单分类", new GetAllBillCategoryResponse(bookService.getAllBillCategory(bookId, type)));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
+    })
+    @RequestMapping(value = "/bill-category", method = RequestMethod.POST)
+    @Operation(summary = "新建账单分类")
+    public Response<Object> addBillCategory(@RequestParam Integer bookId, @RequestParam String billCategoryName,
+                                            @RequestParam(required = false) String svg, @RequestParam BillType type) {
+        bookService.addBillCategory(bookId, billCategoryName, svg, type);
+        return new Response<>(200, "新建账单分类成功", null);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
+    })
+    @RequestMapping(value = "/bill-category", method = RequestMethod.DELETE)
+    @Operation(summary = "删除账单分类")
+    public Response<Object> deleteBillCategory(@RequestParam Integer id) {
+        bookService.deleteBillCategory(id);
+        return new Response<>(200, "删除账单分类成功", null);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
+    })
+    @RequestMapping(value = "/bill-category", method = RequestMethod.PUT)
+    @Operation(summary = "更新账单分类")
+    public Response<Object> updateBillCategory(@RequestParam Integer id, @RequestParam(required = false) String billCategoryName,
+                                               @RequestParam(required = false) String svg,
+                                               @RequestParam(required = false) BillType type,
+                                               @RequestParam(required = false) Integer bookId) {
+        bookService.updateBillCategory(id, billCategoryName, svg, type, bookId);
+        return new Response<>(200, "更新账单分类成功", null);
     }
 }

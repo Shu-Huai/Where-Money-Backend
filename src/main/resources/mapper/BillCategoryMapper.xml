@@ -59,4 +59,33 @@
         from bill_category
         where id = #{id,jdbcType=INTEGER}
     </select>
+    <delete id="deleteBillCategory">
+        delete from bill_category
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
+    <update id="updateBillCategorySelective">
+        update bill_category
+        <set>
+            <if test="billCategoryName != null">
+                bill_category_name = #{billCategoryName,jdbcType=VARCHAR},
+            </if>
+            <if test="svg != null">
+                svg = #{svg,jdbcType=LONGVARCHAR},
+            </if>
+            <if test="type != null">
+                type = #{type},
+            </if>
+            <if test="bookId != null">
+                book_id = #{bookId,jdbcType=INTEGER},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <select id="selectBillCategoryByBookIdNameType" resultMap="BillCategoryResultMap">
+        select *
+        from bill_category
+        where book_id = #{bookId,jdbcType=INTEGER}
+          and bill_category_name = #{billCategoryName,jdbcType=VARCHAR}
+          and type = #{type,jdbcType=VARCHAR}
+    </select>
 </mapper>

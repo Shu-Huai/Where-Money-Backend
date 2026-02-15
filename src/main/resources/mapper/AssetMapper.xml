@@ -125,7 +125,7 @@
         where id = #{id,jdbcType=INTEGER}
     </select>
     <select id="selectTotalAssetByUserId" resultType="java.math.BigDecimal">
-        select sum(balance)
+        select ifnull(sum(balance), 0)
         from asset
         where user_id = #{userId,jdbcType=INTEGER}
     </select>

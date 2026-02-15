@@ -125,4 +125,22 @@
         from income_bill
         where id = #{id,jdbcType=INTEGER}
     </select>
+    <select id="selectIncomeBillByBookIdCategory" resultMap="IncomeBillResultMap">
+        select *
+        from income_bill
+        where book_id = #{bookId,jdbcType=INTEGER}
+          and bill_category_id = #{billCategoryId,jdbcType=INTEGER}
+    </select>
+    <select id="selectIncomeBillIdsByBookIdCategory" resultType="java.lang.Integer">
+        select id
+        from income_bill
+        where book_id = #{bookId,jdbcType=INTEGER}
+          and bill_category_id = #{billCategoryId,jdbcType=INTEGER}
+    </select>
+    <update id="updateIncomeBillCategoryByBookIdCategory">
+        update income_bill
+        set bill_category_id = #{newBillCategoryId,jdbcType=INTEGER}
+        where book_id = #{bookId,jdbcType=INTEGER}
+          and bill_category_id = #{oldBillCategoryId,jdbcType=INTEGER}
+    </update>
 </mapper>

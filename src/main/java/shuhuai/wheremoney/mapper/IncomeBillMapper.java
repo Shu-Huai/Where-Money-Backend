@@ -21,4 +21,10 @@ public interface IncomeBillMapper {
     List<IncomeBill> selectIncomeBillByBookIdTime(Integer bookId, Timestamp startTime, Timestamp endTime);
 
     IncomeBill selectIncomeBillById(Integer id);
+
+    List<IncomeBill> selectIncomeBillByBookIdCategory(Integer bookId, Integer billCategoryId);
+
+    List<Integer> selectIncomeBillIdsByBookIdCategory(Integer bookId, Integer billCategoryId);
+
+    Integer updateIncomeBillCategoryByBookIdCategory(Integer bookId, Integer oldBillCategoryId, Integer newBillCategoryId);
 }
