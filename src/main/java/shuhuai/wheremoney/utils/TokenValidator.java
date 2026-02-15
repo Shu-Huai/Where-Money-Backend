@@ -16,32 +16,77 @@ import shuhuai.wheremoney.service.excep.common.TokenExpireException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Token验证工具类
+ * 实现HandlerInterceptor接口，用于拦截请求并验证Token
+ * 提供Token的生成、解析和验证功能
+ */
 @Component
 public class TokenValidator implements HandlerInterceptor {
+    /**
+     * 线程本地存储，用于存储用户信息
+     */
     private final static ThreadLocal<Map<String, String>> threadLocal = new ThreadLocal<>();
+    
+    /**
+     * Token私钥
+     */
     @Value("${token.privateKey}")
     private String privateKey;
+    
+    /**
+     * 年轻Token过期时间（毫秒）
+     */
     @Value("${token.youngToken}")
     private Long youngToken;
+    
+    /**
+     * 旧Token过期时间（毫秒）
+     */
     @Value("${token.oldToken}")
     private Long oldToken;
 
+    /**
+     * 获取当前线程的用户信息
+     *
+     * @return 用户信息映射
+     */
     public static Map<String, String> getUser() {
         return threadLocal.get();
     }
 
+    /**
+     * 设置当前线程的用户信息
+     *
+     * @param userIdentify 用户信息映射
+     */
     public static void setUser(Map<String, String> userIdentify) {
         threadLocal.set(userIdentify);
     }
 
+    /**
+     * 移除当前线程的用户信息
+     */
     public static void removeUser() {
         threadLocal.remove();
     }
 
+    /**
+     * 生成Token
+     *
+     * @param userId 用户ID
+     * @return 生成的Token
+     */
     public String getToken(Integer userId) {
         return JWT.create().withClaim("userId", userId.toString()).withClaim("timeStamp", System.currentTimeMillis()).sign(Algorithm.HMAC256(privateKey));
     }
 
+    /**
+     * 解析Token
+     *
+     * @param token Token字符串
+     * @return 解析后的用户信息映射
+     */
     public Map<String, String> parseToken(String token) {
         HashMap<String, String> map = new HashMap<>();
         DecodedJWT decodedjwt = JWT.require(Algorithm.HMAC256(privateKey)).build().verify(token);
@@ -52,6 +97,15 @@ public class TokenValidator implements HandlerInterceptor {
         return map;
     }
 
+    /**
+     * 请求处理前的拦截方法
+     * 验证Token的有效性，并处理Token的过期逻辑
+     *
+     * @param httpServletRequest  HttpServletRequest对象
+     * @param httpServletResponse HttpServletResponse对象
+     * @param object              处理请求的对象
+     * @return 是否继续处理请求
+     */
     @Override
     public boolean preHandle(@NonNull HttpServletRequest httpServletRequest, @NonNull HttpServletResponse httpServletResponse, @NonNull Object object) {
         if (!(object instanceof HandlerMethod)) {

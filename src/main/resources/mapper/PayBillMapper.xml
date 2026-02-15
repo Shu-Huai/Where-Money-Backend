@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+支出账单映射器
+用于处理支出账单相关的数据库操作
+-->
 <mapper namespace="shuhuai.wheremoney.mapper.PayBillMapper">
+    <!--
+    支出账单结果映射
+    将数据库查询结果映射到PayBill实体类
+    -->
     <resultMap id="PayBillResultMap" type="shuhuai.wheremoney.entity.PayBill">
         <id column="id" jdbcType="INTEGER" javaType="Integer" property="id"/>
         <result column="book_id" jdbcType="INTEGER" javaType="Integer" property="bookId"/>
@@ -12,6 +20,12 @@
         <result column="refunded" jdbcType="BOOLEAN" javaType="Boolean" property="refunded"/>
         <result column="image" property="image" typeHandler="org.apache.ibatis.type.BlobTypeHandler"/>
     </resultMap>
+    
+    <!--
+    选择性插入支出账单
+    根据传入的PayBill对象属性，选择性地插入数据
+    使用生成的主键值
+    -->
     <insert id="insertPayBillSelective" useGeneratedKeys="true" keyProperty="id"
             parameterType="shuhuai.wheremoney.entity.PayBill">
         insert into pay_bill
@@ -68,11 +82,21 @@
             </if>
         </trim>
     </insert>
+    
+    <!--
+    根据ID删除支出账单
+    删除指定ID的支出账单
+    -->
     <delete id="deletePayBillById" parameterType="Integer">
         delete
         from pay_bill
         where id = #{id,jdbcType=INTEGER}
     </delete>
+    
+    <!--
+    选择性更新支出账单
+    根据传入的PayBill对象属性，选择性地更新数据
+    -->
     <update id="updatePayBillByIdSelective">
         update pay_bill
         <set>
@@ -103,6 +127,11 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    更新支出账单
+    全量更新支出账单数据
+    -->
     <update id="updatePayBillById" parameterType="shuhuai.wheremoney.entity.PayBill">
         update pay_bill
         <set>
@@ -117,12 +146,22 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    根据账本ID查询支出账单
+    查询指定账本的所有支出账单，按时间倒序排序
+    -->
     <select id="selectPayBillByBookId" resultMap="PayBillResultMap">
         select *
         from pay_bill
         where book_id = #{bookId,jdbcType=INTEGER}
         order by bill_time desc
     </select>
+    
+    <!--
+    根据账本ID和时间范围查询支出账单
+    查询指定账本在指定时间范围内的所有支出账单，按时间倒序排序
+    -->
     <select id="selectPayBillByBookIdTime" resultMap="PayBillResultMap">
         select *
         from pay_bill
@@ -131,35 +170,65 @@
           and bill_time &lt; #{endTime,jdbcType=TIMESTAMP}
         order by bill_time desc
     </select>
+    
+    <!--
+    根据ID查询支出账单
+    查询指定ID的支出账单详情
+    -->
     <select id="selectPayBillById" resultMap="PayBillResultMap">
         select *
         from pay_bill
         where id = #{id,jdbcType=INTEGER}
     </select>
+    
+    <!--
+    根据ID查询支出账单（加锁）
+    查询指定ID的支出账单详情，并对记录加锁，用于并发操作
+    -->
     <select id="selectPayBillByIdForUpdate" resultMap="PayBillResultMap">
         select *
         from pay_bill
         where id = #{id,jdbcType=INTEGER}
         for update
     </select>
+    
+    <!--
+    根据账本ID和分类ID查询支出账单
+    查询指定账本中指定分类的所有支出账单
+    -->
     <select id="selectPayBillByBookIdCategory" resultMap="PayBillResultMap">
         select *
         from pay_bill
         where book_id = #{bookId,jdbcType=INTEGER}
           and bill_category_id = #{billCategoryId,jdbcType=INTEGER}
     </select>
+    
+    <!--
+    根据账本ID和分类ID查询支出账单ID列表
+    查询指定账本中指定分类的所有支出账单的ID
+    -->
     <select id="selectPayBillIdsByBookIdCategory" resultType="java.lang.Integer">
         select id
         from pay_bill
         where book_id = #{bookId,jdbcType=INTEGER}
           and bill_category_id = #{billCategoryId,jdbcType=INTEGER}
     </select>
+    
+    <!--
+    更新支出账单分类
+    根据账本ID，将指定旧分类的所有支出账单更新为新分类
+    -->
     <update id="updatePayBillCategoryByBookIdCategory">
         update pay_bill
         set bill_category_id = #{newBillCategoryId,jdbcType=INTEGER}
         where book_id = #{bookId,jdbcType=INTEGER}
           and bill_category_id = #{oldBillCategoryId,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    根据账本ID删除支出账单
+    删除指定账本的所有支出账单
+    -->
     <delete id="deletePayBillByBookId" parameterType="Integer">
         delete
         from pay_bill

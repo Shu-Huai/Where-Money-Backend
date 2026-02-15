@@ -1,3 +1,4 @@
+# 用户表
 CREATE TABLE IF NOT EXISTS `user` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `user_name` VARCHAR(255) NOT NULL,
@@ -7,6 +8,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     UNIQUE KEY `uk_user_name` (`user_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+# 资产表
 CREATE TABLE IF NOT EXISTS `asset` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT NOT NULL,
@@ -22,6 +24,7 @@ CREATE TABLE IF NOT EXISTS `asset` (
     CONSTRAINT `fk_asset_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+# 账本表
 CREATE TABLE IF NOT EXISTS `book` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT NOT NULL,
@@ -34,6 +37,7 @@ CREATE TABLE IF NOT EXISTS `book` (
     CONSTRAINT `fk_book_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+# 账单分类表
 CREATE TABLE IF NOT EXISTS `bill_category` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `book_id` INT NULL,
@@ -44,6 +48,7 @@ CREATE TABLE IF NOT EXISTS `bill_category` (
     CONSTRAINT `fk_bill_category_book_id` FOREIGN KEY (`book_id`) REFERENCES `book` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+# 预算表
 CREATE TABLE IF NOT EXISTS `budget` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `book_id` INT NOT NULL,
@@ -57,6 +62,7 @@ CREATE TABLE IF NOT EXISTS `budget` (
     CONSTRAINT `fk_budget_bill_category_id` FOREIGN KEY (`bill_category_id`) REFERENCES `bill_category` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+# 收入账单表
 CREATE TABLE IF NOT EXISTS `income_bill` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `book_id` INT NOT NULL,
@@ -74,6 +80,7 @@ CREATE TABLE IF NOT EXISTS `income_bill` (
     CONSTRAINT `fk_income_bill_bill_category_id` FOREIGN KEY (`bill_category_id`) REFERENCES `bill_category` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+# 支出账单表
 CREATE TABLE IF NOT EXISTS `pay_bill` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `book_id` INT NOT NULL,
@@ -92,6 +99,7 @@ CREATE TABLE IF NOT EXISTS `pay_bill` (
     CONSTRAINT `fk_pay_bill_bill_category_id` FOREIGN KEY (`bill_category_id`) REFERENCES `bill_category` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='支出账单';
 
+# 退款账单表
 CREATE TABLE IF NOT EXISTS `refund_bill` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `book_id` INT NOT NULL,
@@ -109,6 +117,7 @@ CREATE TABLE IF NOT EXISTS `refund_bill` (
     CONSTRAINT `fk_refund_bill_refund_asset_id` FOREIGN KEY (`refund_asset_id`) REFERENCES `asset` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+# 转账账单表
 CREATE TABLE IF NOT EXISTS `transfer_bill` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `book_id` INT NOT NULL,

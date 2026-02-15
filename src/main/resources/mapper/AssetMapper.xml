@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+资产映射器
+用于处理资产相关的数据库操作
+-->
 <mapper namespace="shuhuai.wheremoney.mapper.AssetMapper">
+    <!--
+    资产结果映射
+    将数据库查询结果映射到Asset实体类
+    -->
     <resultMap id="AssetResultMap" type="shuhuai.wheremoney.entity.Asset">
         <id column="id" jdbcType="INTEGER" javaType="Integer" property="id"/>
         <result column="user_id" jdbcType="INTEGER" javaType="Integer" property="userId"/>
@@ -14,6 +22,12 @@
         <result column="in_total" jdbcType="BOOLEAN" javaType="Boolean" property="inTotal"/>
         <result column="svg" jdbcType="VARCHAR" javaType="String" property="svg"/>
     </resultMap>
+    
+    <!--
+    选择性插入资产
+    根据传入的Asset对象属性，选择性地插入数据
+    使用生成的主键值
+    -->
     <insert id="insertAssetSelective" useGeneratedKeys="true" keyProperty="id"
             parameterType="shuhuai.wheremoney.entity.Asset">
         insert into asset
@@ -76,6 +90,11 @@
             </if>
         </trim>
     </insert>
+    
+    <!--
+    根据ID选择性更新资产
+    根据传入的Asset对象属性，选择性地更新数据
+    -->
     <update id="updateAssetSelectiveById" parameterType="shuhuai.wheremoney.entity.Asset">
         update asset
         <set>
@@ -109,21 +128,42 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    根据ID相对更新余额
+    将指定资产的余额增加指定的相对值
+    -->
     <update id="updateBalanceRelativeById">
         update asset
         set balance = balance + #{relativeValue,jdbcType=DECIMAL}
         where id = #{id,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    根据用户ID查询资产
+    查询指定用户的所有资产
+    -->
     <select id="selectAssetByUserId" resultMap="AssetResultMap">
         select *
         from asset
         where user_id = #{userId,jdbcType=INTEGER}
     </select>
+    
+    <!--
+    根据ID查询资产
+    查询指定ID的资产详情
+    -->
     <select id="selectAssetById" resultMap="AssetResultMap">
         select *
         from asset
         where id = #{id,jdbcType=INTEGER}
     </select>
+    
+    <!--
+    根据用户ID查询总资产
+    查询指定用户的所有资产余额总和
+    如果没有资产，返回0
+    -->
     <select id="selectTotalAssetByUserId" resultType="java.math.BigDecimal">
         select ifnull(sum(balance), 0)
         from asset

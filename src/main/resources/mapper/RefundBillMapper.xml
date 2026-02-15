@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+退款账单映射器
+用于处理退款账单相关的数据库操作
+-->
 <mapper namespace="shuhuai.wheremoney.mapper.RefundBillMapper">
+    <!--
+    退款账单结果映射
+    将数据库查询结果映射到RefundBill实体类
+    -->
     <resultMap id="RefundBillResultMap" type="shuhuai.wheremoney.entity.RefundBill">
         <id column="id" jdbcType="INTEGER" javaType="Integer" property="id"/>
         <result column="book_id" jdbcType="INTEGER" javaType="Integer" property="bookId"/>
@@ -11,6 +19,12 @@
         <result column="remark" jdbcType="VARCHAR" javaType="String" property="remark"/>
         <result column="image" property="image" typeHandler="org.apache.ibatis.type.BlobTypeHandler"/>
     </resultMap>
+    
+    <!--
+    选择性插入退款账单
+    根据传入的RefundBill对象属性，选择性地插入数据
+    使用生成的主键值
+    -->
     <insert id="insertRefundBillSelective" useGeneratedKeys="true" keyProperty="id"
             parameterType="shuhuai.wheremoney.entity.RefundBill">
         insert into refund_bill
@@ -61,11 +75,21 @@
             </if>
         </trim>
     </insert>
+    
+    <!--
+    根据ID删除退款账单
+    删除指定ID的退款账单
+    -->
     <delete id="deleteRefundBillById" parameterType="Integer">
         delete
         from refund_bill
         where id = #{id,jdbcType=INTEGER}
     </delete>
+    
+    <!--
+    选择性更新退款账单
+    根据传入的RefundBill对象属性，选择性地更新数据
+    -->
     <update id="updateRefundBillByIdSelective" parameterType="shuhuai.wheremoney.entity.RefundBill">
         update refund_bill
         <set>
@@ -93,6 +117,11 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    更新退款账单
+    全量更新退款账单数据
+    -->
     <update id="updateRefundBillById" parameterType="shuhuai.wheremoney.entity.RefundBill">
         update refund_bill
         <set>
@@ -106,12 +135,22 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    根据账本ID查询退款账单
+    查询指定账本的所有退款账单，按时间倒序排序
+    -->
     <select id="selectRefundBillByBookId" resultMap="RefundBillResultMap">
         select *
         from refund_bill
         where book_id = #{bookId,jdbcType=INTEGER}
         order by bill_time desc
     </select>
+    
+    <!--
+    根据账本ID和时间范围查询退款账单
+    查询指定账本在指定时间范围内的所有退款账单，按时间倒序排序
+    -->
     <select id="selectRefundBillByBookIdTime" resultMap="RefundBillResultMap">
         select *
         from refund_bill
@@ -120,17 +159,32 @@
           and bill_time &lt; #{endTime,jdbcType=TIMESTAMP}
         order by bill_time desc
     </select>
+    
+    <!--
+    根据ID查询退款账单
+    查询指定ID的退款账单详情
+    -->
     <select id="selectRefundBillById" resultMap="RefundBillResultMap">
         select *
         from refund_bill
         where id = #{id,jdbcType=INTEGER}
     </select>
+    
+    <!--
+    根据支出账单ID查询退款账单
+    查询指定支出账单的所有退款账单，按时间倒序排序
+    -->
     <select id="selectRefundBillByPayBillId" resultMap="RefundBillResultMap">
         select *
         from refund_bill
         where pay_bill_id = #{payBillId,jdbcType=INTEGER}
         order by bill_time desc
     </select>
+    
+    <!--
+    根据账本ID删除退款账单
+    删除指定账本的所有退款账单
+    -->
     <delete id="deleteRefundBillByBookId" parameterType="Integer">
         delete
         from refund_bill

@@ -21,22 +21,48 @@ import shuhuai.wheremoney.utils.TimeComputer;
 
 import java.util.List;
 
+/**
+ * 账单分类服务实现类
+ * 实现BillCategoryService接口，提供账单分类相关的业务逻辑操作，包括分类的创建、更新、删除，以及默认分类的添加等
+ */
 @Service
 public class BillCategoryServiceImpl implements BillCategoryService {
+    /**
+     * 默认SVG图标
+     */
     @Value("${default.svg}")
     private String defaultSvg;
+    /**
+     * Redis账单分类过期时间
+     */
     @Value("${redis.billCategory.expire}")
     private Long billCategoryExpire;
+    /**
+     * 账单分类Mapper
+     */
     @Resource
     private BillCategoryMapper billCategoryMapper;
+    /**
+     * 支出账单Mapper
+     */
     @Resource
     private PayBillMapper payBillMapper;
+    /**
+     * 收入账单Mapper
+     */
     @Resource
     private IncomeBillMapper incomeBillMapper;
 
+    /**
+     * Redis连接器
+     */
     @Resource
     private RedisConnector redisConnector;
 
+    /**
+     * 将分类写入Redis缓存
+     * @param billCategory 账单分类
+     */
     private void writeCategoryToRedis(BillCategory billCategory) {
         if (redisConnector.existObject("bill_category:" + billCategory.getId())) {
             redisConnector.setExpire("bill_category:" + billCategory.getId(), TimeComputer.dayToSecond(billCategoryExpire));
@@ -45,6 +71,13 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         }
     }
 
+    /**
+     * 确保存在已删除的分类
+     * @param bookId 账本ID
+     * @param type 分类类型
+     * @return 已删除分类的ID
+     * @throws ServerException 服务器错误异常
+     */
     private Integer ensureDeletedCategory(Integer bookId, BillType type) {
         BillCategory defaultCategory = billCategoryMapper.selectBillCategoryByBookIdNameType(bookId, "已删除的", type);
         if (defaultCategory != null) {
@@ -59,6 +92,11 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         return temp.getId();
     }
 
+    /**
+     * 清除账单缓存
+     * @param cachePrefix 缓存前缀
+     * @param billIds 账单ID列表
+     */
     private void evictBillCaches(String cachePrefix, List<Integer> billIds) {
         if (billIds == null || billIds.isEmpty()) {
             return;
@@ -67,6 +105,11 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         redisConnector.deleteObject(keys);
     }
 
+    /**
+     * 添加默认账单分类
+     * @param bookId 账本ID
+     * @throws ServerException 服务器错误异常
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addDefaultBillCategory(Integer bookId) {
@@ -85,6 +128,12 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         }
     }
 
+    /**
+     * 获取指定账单分类
+     * @param id 分类ID
+     * @return 账单分类实体
+     * @throws ParamsException 参数错误异常
+     */
     @Override
     public BillCategory getBillCategory(Integer id) {
         if (id == null) {
@@ -101,6 +150,11 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         return result;
     }
 
+    /**
+     * 获取账本的所有账单分类
+     * @param bookId 账本ID
+     * @return 账单分类列表
+     */
     @Override
     public List<BillCategory> getBillCategoriesByBook(Integer bookId) {
         List<BillCategory> result = billCategoryMapper.selectBillCategoryByBook(bookId);
@@ -110,6 +164,12 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         return result;
     }
 
+    /**
+     * 获取账本指定类型的账单分类
+     * @param bookId 账本ID
+     * @param type 分类类型
+     * @return 账单分类列表
+     */
     @Override
     public List<BillCategory> getBillCategoriesByBookType(Integer bookId, BillType type) {
         List<BillCategory> result = billCategoryMapper.selectBillCategoryByBookType(bookId, type);
@@ -119,6 +179,14 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         return billCategoryMapper.selectBillCategoryByBookType(bookId, type);
     }
 
+    /**
+     * 添加账单分类
+     * @param bookId 账本ID
+     * @param name 分类名称
+     * @param svg 分类图标
+     * @param type 分类类型
+     * @throws ServerException 服务器错误异常
+     */
     @Override
     public void addBillCategory(Integer bookId, String name, String svg, BillType type) {
         BillCategory temp = new BillCategory(bookId, name, svg, type);
@@ -129,6 +197,12 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         redisConnector.writeObject("bill_category:" + temp.getId(), temp, TimeComputer.dayToSecond(billCategoryExpire));
     }
 
+    /**
+     * 删除账单分类
+     * @param id 分类ID
+     * @throws ParamsException 参数错误异常
+     * @throws ServerException 服务器错误异常
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteBillCategory(Integer id) {
@@ -176,6 +250,16 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         redisConnector.deleteObject("bill_category:" + id);
     }
 
+    /**
+     * 更新账单分类
+     * @param id 分类ID
+     * @param name 分类名称
+     * @param svg 分类图标
+     * @param type 分类类型
+     * @param bookId 账本ID
+     * @throws ParamsException 参数错误异常
+     * @throws ServerException 服务器错误异常
+     */
     @Override
     public void updateBillCategory(Integer id, String name, String svg, BillType type, Integer bookId) {
         if (id == null) {

@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+收入账单映射器
+用于处理收入账单相关的数据库操作
+-->
 <mapper namespace="shuhuai.wheremoney.mapper.IncomeBillMapper">
+    <!--
+    收入账单结果映射
+    将数据库查询结果映射到IncomeBill实体类
+    -->
     <resultMap id="IncomeBillResultMap" type="shuhuai.wheremoney.entity.IncomeBill">
         <id column="id" jdbcType="INTEGER" javaType="Integer" property="id"/>
         <result column="book_id" jdbcType="INTEGER" javaType="Integer" property="bookId"/>
@@ -11,6 +19,12 @@
         <result column="remark" jdbcType="VARCHAR" javaType="String" property="remark"/>
         <result column="image" property="image" typeHandler="org.apache.ibatis.type.BlobTypeHandler"/>
     </resultMap>
+    
+    <!--
+    选择性插入收入账单
+    根据传入的IncomeBill对象属性，选择性地插入数据
+    使用生成的主键值
+    -->
     <insert id="insertIncomeBillSelective" useGeneratedKeys="true" keyProperty="id"
             parameterType="shuhuai.wheremoney.entity.IncomeBill">
         insert into income_bill
@@ -61,11 +75,21 @@
             </if>
         </trim>
     </insert>
+    
+    <!--
+    根据ID删除收入账单
+    删除指定ID的收入账单
+    -->
     <delete id="deleteIncomeBillById" parameterType="Integer">
         delete
         from income_bill
         where id = #{id,jdbcType=INTEGER}
     </delete>
+    
+    <!--
+    选择性更新收入账单
+    根据传入的IncomeBill对象属性，选择性地更新数据
+    -->
     <update id="updateIncomeBillByIdSelective" parameterType="shuhuai.wheremoney.entity.IncomeBill">
         update income_bill
         <set>
@@ -93,6 +117,11 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    更新收入账单
+    全量更新收入账单数据
+    -->
     <update id="updateIncomeBillById" parameterType="shuhuai.wheremoney.entity.IncomeBill">
         update income_bill
         <set>
@@ -106,12 +135,22 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    根据账本ID查询收入账单
+    查询指定账本的所有收入账单，按时间倒序排序
+    -->
     <select id="selectIncomeBillByBookId" resultMap="IncomeBillResultMap">
         select *
         from income_bill
         where book_id = #{bookId,jdbcType=INTEGER}
         order by bill_time desc
     </select>
+    
+    <!--
+    根据账本ID和时间范围查询收入账单
+    查询指定账本在指定时间范围内的所有收入账单，按时间倒序排序
+    -->
     <select id="selectIncomeBillByBookIdTime" resultMap="IncomeBillResultMap">
         select *
         from income_bill
@@ -120,29 +159,54 @@
           and bill_time &lt; #{endTime,jdbcType=TIMESTAMP}
         order by bill_time desc
     </select>
+    
+    <!--
+    根据ID查询收入账单
+    查询指定ID的收入账单详情
+    -->
     <select id="selectIncomeBillById" resultMap="IncomeBillResultMap">
         select *
         from income_bill
         where id = #{id,jdbcType=INTEGER}
     </select>
+    
+    <!--
+    根据账本ID和分类ID查询收入账单
+    查询指定账本中指定分类的所有收入账单
+    -->
     <select id="selectIncomeBillByBookIdCategory" resultMap="IncomeBillResultMap">
         select *
         from income_bill
         where book_id = #{bookId,jdbcType=INTEGER}
           and bill_category_id = #{billCategoryId,jdbcType=INTEGER}
     </select>
+    
+    <!--
+    根据账本ID和分类ID查询收入账单ID列表
+    查询指定账本中指定分类的所有收入账单的ID
+    -->
     <select id="selectIncomeBillIdsByBookIdCategory" resultType="java.lang.Integer">
         select id
         from income_bill
         where book_id = #{bookId,jdbcType=INTEGER}
           and bill_category_id = #{billCategoryId,jdbcType=INTEGER}
     </select>
+    
+    <!--
+    更新收入账单分类
+    根据账本ID，将指定旧分类的所有收入账单更新为新分类
+    -->
     <update id="updateIncomeBillCategoryByBookIdCategory">
         update income_bill
         set bill_category_id = #{newBillCategoryId,jdbcType=INTEGER}
         where book_id = #{bookId,jdbcType=INTEGER}
           and bill_category_id = #{oldBillCategoryId,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    根据账本ID删除收入账单
+    删除指定账本的所有收入账单
+    -->
     <delete id="deleteIncomeBillByBookId" parameterType="Integer">
         delete
         from income_bill

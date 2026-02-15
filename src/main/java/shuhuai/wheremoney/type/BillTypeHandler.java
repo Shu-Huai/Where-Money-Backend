@@ -10,24 +10,61 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+/**
+ * 账单类型MyBatis类型处理器
+ * 用于处理BillType枚举类型和数据库VARCHAR类型之间的转换
+ */
 @MappedJdbcTypes(JdbcType.VARCHAR)
 @MappedTypes(BillType.class)
 public class BillTypeHandler extends BaseTypeHandler<BillType> {
+    /**
+     * 设置非空参数
+     *
+     * @param preparedStatement 预编译语句对象
+     * @param index             参数索引
+     * @param billType          账单类型枚举
+     * @param jdbcType          JDBC类型
+     * @throws SQLException SQL异常
+     */
     @Override
     public void setNonNullParameter(PreparedStatement preparedStatement, int index, BillType billType, JdbcType jdbcType) throws SQLException {
         preparedStatement.setString(index, billType.getType());
     }
 
+    /**
+     * 从结果集中获取可为空的结果（通过字段名）
+     *
+     * @param resultSet 结果集对象
+     * @param field     字段名
+     * @return 账单类型枚举
+     * @throws SQLException SQL异常
+     */
     @Override
     public BillType getNullableResult(ResultSet resultSet, String field) throws SQLException {
         return BillType.getBillTypeEnum(resultSet.getString(field));
     }
 
+    /**
+     * 从结果集中获取可为空的结果（通过索引）
+     *
+     * @param resultSet 结果集对象
+     * @param index     索引
+     * @return 账单类型枚举
+     * @throws SQLException SQL异常
+     */
     @Override
     public BillType getNullableResult(ResultSet resultSet, int index) throws SQLException {
         return BillType.getBillTypeEnum(resultSet.getString(index));
     }
 
+    /**
+     * 从CallableStatement中获取可为空的结果
+     *
+     * @param callableStatement 调用语句对象
+     * @param index             索引
+     * @return 账单类型枚举
+     * @throws SQLException SQL异常
+     */
     @Override
     public BillType getNullableResult(CallableStatement callableStatement, int index) throws SQLException {
         return BillType.getBillTypeEnum(callableStatement.getString(index));

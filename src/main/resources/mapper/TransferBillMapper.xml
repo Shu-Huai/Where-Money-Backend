@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+转账账单映射器
+用于处理转账账单相关的数据库操作
+-->
 <mapper namespace="shuhuai.wheremoney.mapper.TransferBillMapper">
+    <!--
+    转账账单结果映射
+    将数据库查询结果映射到TransferBill实体类
+    -->
     <resultMap id="TransferBillResultMap" type="shuhuai.wheremoney.entity.TransferBill">
         <id column="id" jdbcType="INTEGER" javaType="Integer" property="id"/>
         <result column="book_id" jdbcType="INTEGER" javaType="Integer" property="bookId"/>
@@ -12,6 +20,12 @@
         <result column="remark" jdbcType="VARCHAR" javaType="String" property="remark"/>
         <result column="image" property="image" typeHandler="org.apache.ibatis.type.BlobTypeHandler"/>
     </resultMap>
+    
+    <!--
+    选择性插入转账账单
+    根据传入的TransferBill对象属性，选择性地插入数据
+    使用生成的主键值
+    -->
     <insert id="insertTransferBillSelective" useGeneratedKeys="true" keyProperty="id"
             parameterType="shuhuai.wheremoney.entity.TransferBill">
         insert into transfer_bill
@@ -68,11 +82,21 @@
             </if>
         </trim>
     </insert>
+    
+    <!--
+    根据ID删除转账账单
+    删除指定ID的转账账单
+    -->
     <delete id="deleteTransferBillById" parameterType="Integer">
         delete
         from transfer_bill
         where id = #{id,jdbcType=INTEGER}
     </delete>
+    
+    <!--
+    选择性更新转账账单
+    根据传入的TransferBill对象属性，选择性地更新数据
+    -->
     <update id="updateTransferBillByIdSelective" parameterType="shuhuai.wheremoney.entity.TransferBill">
         update transfer_bill
         <set>
@@ -103,6 +127,11 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    更新转账账单
+    全量更新转账账单数据
+    -->
     <update id="updateTransferBillById" parameterType="shuhuai.wheremoney.entity.TransferBill">
         update transfer_bill
         <set>
@@ -117,12 +146,22 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    
+    <!--
+    根据账本ID查询转账账单
+    查询指定账本的所有转账账单，按时间倒序排序
+    -->
     <select id="selectTransferBillByBookId" resultMap="TransferBillResultMap">
         select *
         from transfer_bill
         where book_id = #{bookId,jdbcType=INTEGER}
         order by bill_time desc
     </select>
+    
+    <!--
+    根据账本ID和时间范围查询转账账单
+    查询指定账本在指定时间范围内的所有转账账单，按时间倒序排序
+    -->
     <select id="selectTransferBillByBookIdTime" resultMap="TransferBillResultMap">
         select *
         from transfer_bill
@@ -131,11 +170,21 @@
           and bill_time &lt; #{endTime,jdbcType=TIMESTAMP}
         order by bill_time desc
     </select>
+    
+    <!--
+    根据ID查询转账账单
+    查询指定ID的转账账单详情
+    -->
     <select id="selectTransferBillById" resultMap="TransferBillResultMap">
         select *
         from transfer_bill
         where id = #{id,jdbcType=INTEGER}
     </select>
+    
+    <!--
+    根据账本ID删除转账账单
+    删除指定账本的所有转账账单
+    -->
     <delete id="deleteTransferBillByBookId" parameterType="Integer">
         delete
         from transfer_bill
