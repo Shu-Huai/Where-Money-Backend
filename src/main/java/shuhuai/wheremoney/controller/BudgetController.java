@@ -76,4 +76,15 @@ public class BudgetController extends BaseController {
         }
         return new Response<>(200, "修改总预算成功", new GetBookResponse(bookService.getBook(bookId)));
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
+    })
+    @RequestMapping(value = "/budget", method = RequestMethod.DELETE)
+    @Operation(summary = "删除预算", description = "删除预算")
+    public Response<Void> deleteBudget(@RequestParam Integer budgetId) {
+        budgetService.deleteBudget(budgetId);
+        return new Response<>(200, "删除预算成功", null);
+    }
 }

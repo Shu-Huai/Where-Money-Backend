@@ -23,4 +23,6 @@ public interface BudgetMapper {
     Integer updateBudgetById(Budget budget);
 
     Budget selectBudgetByCategoryId(Integer categoryId);
+
+    Integer deleteBudgetById(Integer id);
 }

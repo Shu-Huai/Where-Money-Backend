@@ -302,4 +302,15 @@ public class BudgetServiceImpl implements BudgetService {
             throw new ServerException("服务器错误");
         }
     }
+
+    @Override
+    public void deleteBudget(Integer id) {
+        if (id == null) {
+            throw new ParamsException("参数错误");
+        }
+        Integer result = budgetMapper.deleteBudgetById(id);
+        if (result == null || result != 1) {
+            throw new ServerException("服务器错误");
+        }
+    }
 }

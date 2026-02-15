@@ -35,4 +35,6 @@ public interface BudgetService {
     void changeCategoryUsedBudgetRelative(Integer billCategoryId, BigDecimal relativeValue);
 
     void changeCategoryTimesRelative(Integer billCategoryId, Integer relativeValue);
+
+    void deleteBudget(Integer id);
 }

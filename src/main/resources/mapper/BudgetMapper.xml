@@ -91,4 +91,9 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+    <delete id="deleteBudgetById">
+        delete
+        from budget
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
 </mapper>
