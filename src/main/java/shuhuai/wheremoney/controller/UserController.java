@@ -16,16 +16,32 @@ import shuhuai.wheremoney.response.user.LoginResponse;
 import shuhuai.wheremoney.service.UserService;
 import shuhuai.wheremoney.utils.TokenValidator;
 
+/**
+ * 用户管理控制器
+ * 处理用户相关的HTTP请求，包括注册、登录、修改用户名、修改密码等操作
+ */
 @RestController
 @RequestMapping("/api/user")
 @Tag(name = "用户管理")
 @Slf4j
 public class UserController extends BaseController {
+    /**
+     * 用户服务实例，用于处理用户相关的业务逻辑
+     */
     @Resource
     private UserService userService;
+    /**
+     * 令牌验证器，用于生成和验证用户令牌
+     */
     @Resource
     private TokenValidator tokenValidator;
 
+    /**
+     * 用户注册
+     * @param userName 用户名
+     * @param password 密码
+     * @return 注册结果
+     */
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     @Operation(summary = "注册")
     @ApiResponses(value = {
@@ -35,10 +51,17 @@ public class UserController extends BaseController {
             @ApiResponse(responseCode = "500", description = "服务器错误")
     })
     public Response<Object> register(@RequestParam String userName, @RequestParam String password) {
+        // 调用服务层进行注册
         userService.register(userName, password);
         return new Response<>(200, "注册成功", null);
     }
 
+    /**
+     * 用户登录
+     * @param userName 用户名
+     * @param password 密码
+     * @return 登录结果，包含token
+     */
     @RequestMapping(value = "/login", method = RequestMethod.POST)
     @Operation(summary = "登录")
     @ApiResponses(value = {
@@ -47,11 +70,19 @@ public class UserController extends BaseController {
             @ApiResponse(responseCode = "422", description = "参数错误"),
     })
     public Response<LoginResponse> login(@RequestParam String userName, @RequestParam String password) {
+        // 调用服务层进行登录验证
         userService.login(userName, password);
-        String token = tokenValidator.getToken(userName);
+        // 生成token
+        Integer userId = userService.getUserId(userName);
+        String token = tokenValidator.getToken(userId);
         return new Response<>(200, "登录成功", new LoginResponse(token));
     }
 
+    /**
+     * 修改用户名
+     * @param userName 新用户名
+     * @return 修改结果，包含新token
+     */
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "修改用户名成功"),
             @ApiResponse(responseCode = "400", description = "用户名已被占用"),
@@ -62,12 +93,20 @@ public class UserController extends BaseController {
     @RequestMapping(value = "/user-name", method = RequestMethod.PATCH)
     @Operation(summary = "修改用户名")
     public Response<ChangeUserNameResponse> changeUserName(@RequestParam String userName) {
-        String oldUserName = TokenValidator.getUser().get("userName");
-        userService.changeUsername(oldUserName, userName);
-        String token = tokenValidator.getToken(userName);
+        // 从token中获取用户ID
+        Integer userId = Integer.parseInt(TokenValidator.getUser().get("userId"));
+        // 调用服务层修改用户名
+        userService.changeUsername(userId, userName);
+        // 生成新token
+        String token = tokenValidator.getToken(userId);
         return new Response<>(200, "修改用户名成功", new ChangeUserNameResponse(token));
     }
 
+    /**
+     * 修改密码
+     * @param password 新密码
+     * @return 修改结果
+     */
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "修改用户名成功"),
             @ApiResponse(responseCode = "401", description = "token过期"),
@@ -77,17 +116,24 @@ public class UserController extends BaseController {
     @RequestMapping(value = "/password", method = RequestMethod.PATCH)
     @Operation(summary = "修改密码")
     public Response<Object> changePassword(@RequestParam String password) {
-        String userName = TokenValidator.getUser().get("userName");
-        userService.changePassword(userName, password);
+        // 从token中获取用户ID
+        Integer userId = Integer.parseInt(TokenValidator.getUser().get("userId"));
+        // 调用服务层修改密码
+        userService.changePassword(userId, password);
         return new Response<>(200, "修改密码成功", null);
     }
 
+    /**
+     * 获取用户协议
+     * @return 用户协议HTML内容
+     */
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "获取协议成功"),
     })
     @Operation(summary = "获取协议")
     @RequestMapping(value = "/protocol", method = RequestMethod.GET)
     public Response<String> protocol() {
+        // 构建用户协议HTML内容
         String protocolHtml = """
                 <h1>Where-Money 用户协议</h1>
                 <p><strong>生效日期：</strong>2026-02-14</p>

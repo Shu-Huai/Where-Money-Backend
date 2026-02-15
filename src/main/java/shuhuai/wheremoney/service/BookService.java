@@ -9,9 +9,9 @@ import java.sql.Timestamp;
 import java.util.List;
 
 public interface BookService {
-    void addBook(String userName, String title, Integer beginDate);
+    void addBook(Integer userId, String title, Integer beginDate);
 
-    List<Book> getBook(String userName);
+    List<Book> getBookList(Integer userId);
 
     Book getBook(Integer id);
 
@@ -31,5 +31,5 @@ public interface BookService {
 
     void updateBillCategory(Integer id, String billCategoryName, String svg, BillType type, Integer bookId);
 
-    void deleteBook(Integer id, String userName);
+    void deleteBook(Integer id, Integer userId);
 }

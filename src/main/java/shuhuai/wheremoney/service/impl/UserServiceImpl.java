@@ -61,11 +61,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void changeUsername(String oldUserName, String userName) throws UserNameOccupiedException, UserMissingException, ParamsException, ServerException {
-        if (oldUserName == null || userName == null) {
+    public void changeUsername(Integer userId, String userName) throws UserNameOccupiedException, UserMissingException, ParamsException, ServerException {
+        if (userId == null || userName == null) {
             throw new ParamsException("参数错误");
         }
-        User user = userMapper.selectUserByUserName(oldUserName);
+        User user = userMapper.selectUserByUserId(userId);
         if (user == null) {
             throw new UserMissingException("用户不存在");
         }
@@ -80,11 +80,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void changePassword(String userName, String password) throws ParamsException, ServerException, UserMissingException {
-        if (userName == null || password == null) {
+    public void changePassword(Integer userId, String password) throws ParamsException, ServerException, UserMissingException {
+        if (userId == null || password == null) {
             throw new ParamsException("参数错误");
         }
-        User user = userMapper.selectUserByUserName(userName);
+        User user = userMapper.selectUserByUserId(userId);
         if (user == null) {
             throw new UserMissingException("用户不存在");
         }
@@ -93,5 +93,14 @@ public class UserServiceImpl implements UserService {
         if (result != 1) {
             throw new ServerException("服务器错误");
         }
+    }
+
+    @Override
+    public Integer getUserId(String userName) throws UserMissingException {
+        User user = userMapper.selectUserByUserName(userName);
+        if (user == null) {
+            throw new UserMissingException("用户不存在");
+        }
+        return user.getId();
     }
 }

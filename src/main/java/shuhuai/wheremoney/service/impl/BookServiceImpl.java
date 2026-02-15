@@ -49,11 +49,11 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addBook(String userName, String title, Integer beginDate) {
-        if (userName == null || title == null || beginDate == null || beginDate < 1 || beginDate > 28) {
+    public void addBook(Integer userId, String title, Integer beginDate) {
+        if (userId == null || title == null || beginDate == null || beginDate < 1 || beginDate > 28) {
             throw new ParamsException("参数错误");
         }
-        User user = userMapper.selectUserByUserName(userName);
+        User user = userMapper.selectUserByUserId(userId);
         Book book = bookMapper.selectBookByUserTitle(user, title);
         if (book != null) {
             throw new TitleOccupiedException("标题已被占用");
@@ -67,11 +67,11 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public List<Book> getBook(String userName) {
-        if (userName == null) {
+    public List<Book> getBookList(Integer userId) {
+        if (userId == null) {
             throw new ParamsException("参数错误");
         }
-        User user = userMapper.selectUserByUserName(userName);
+        User user = userMapper.selectUserByUserId(userId);
         if (user == null) {
             throw new UserMissingException("用户不存在");
         }
@@ -166,11 +166,11 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteBook(Integer id, String userName) {
-        if (id == null) {
+    public void deleteBook(Integer id, Integer userId) {
+        if (id == null || userId == null) {
             throw new ParamsException("参数错误");
         }
-        User user = userMapper.selectUserByUserName(userName);
+        User user = userMapper.selectUserByUserId(userId);
         if (user == null) {
             throw new UserMissingException("用户不存在");
         }
@@ -178,7 +178,7 @@ public class BookServiceImpl implements BookService {
         if (book == null) {
             throw new ParamsException("账本不存在");
         }
-        if (!user.getId().equals(book.getUserId())) {
+        if (!userId.equals(book.getUserId())) {
             throw new PermissionDeniedException("权限不足");
         }
         List<Book> books = bookMapper.selectBookByUser(user);

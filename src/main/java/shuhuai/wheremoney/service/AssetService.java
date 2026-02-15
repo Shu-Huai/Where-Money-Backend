@@ -9,16 +9,16 @@ import java.util.List;
 import java.util.Map;
 
 public interface AssetService {
-    void addAsset(String userName, String assetName, BigDecimal balance, AssetType type,
+    void addAsset(Integer userId, String assetName, BigDecimal balance, AssetType type,
                   Integer billDate, Integer repayDate, BigDecimal quota, Boolean inTotal, String svg);
 
-    List<Asset> getAllAsset(String userName);
+    List<Asset> getAllAsset(Integer userId);
 
     Asset getAsset(Integer id);
 
     void updateAsset(Asset asset);
 
-    List<Map<String, Object>> getDayStatistic(String userName, Timestamp startTime, Timestamp endTime);
+    List<Map<String, Object>> getDayStatistic(Integer userId, Timestamp startTime, Timestamp endTime);
 
     void changeBalanceRelative(Integer id, BigDecimal relativeValue);
 }

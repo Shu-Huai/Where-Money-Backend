@@ -38,16 +38,16 @@ public class TokenValidator implements HandlerInterceptor {
         threadLocal.remove();
     }
 
-    public String getToken(String userName) {
-        return JWT.create().withClaim("userName", userName).withClaim("timeStamp", System.currentTimeMillis()).sign(Algorithm.HMAC256(privateKey));
+    public String getToken(Integer userId) {
+        return JWT.create().withClaim("userId", userId.toString()).withClaim("timeStamp", System.currentTimeMillis()).sign(Algorithm.HMAC256(privateKey));
     }
 
     public Map<String, String> parseToken(String token) {
         HashMap<String, String> map = new HashMap<>();
         DecodedJWT decodedjwt = JWT.require(Algorithm.HMAC256(privateKey)).build().verify(token);
-        Claim userName = decodedjwt.getClaim("userName");
+        Claim userId = decodedjwt.getClaim("userId");
         Claim timeStamp = decodedjwt.getClaim("timeStamp");
-        map.put("userName", userName.asString());
+        map.put("userId", userId.asString());
         map.put("timeStamp", timeStamp.asLong().toString());
         return map;
     }
@@ -58,7 +58,7 @@ public class TokenValidator implements HandlerInterceptor {
             return true;
         }
         String token = httpServletRequest.getHeader("Authorization");
-        if (null == token || "".equals(token.trim())) {
+        if (null == token || token.trim().isEmpty()) {
             throw new TokenExpireException("token无效");
         }
         Map<String, String> map;
@@ -68,10 +68,10 @@ public class TokenValidator implements HandlerInterceptor {
         } catch (Exception e) {
             throw new TokenExpireException("token无效");
         }
-        String userName = map.get("userName");
+        Integer userId = Integer.parseInt(map.get("userId"));
         long timeOfUse = System.currentTimeMillis() - Long.parseLong(map.get("timeStamp"));
         if (timeOfUse >= youngToken && timeOfUse < oldToken) {
-            httpServletResponse.setHeader("Authorization", "Bearer " + getToken(userName));
+            httpServletResponse.setHeader("Authorization", "Bearer " + getToken(userId));
         } else if (timeOfUse >= oldToken) {
             throw new TokenExpireException("token过期");
         }

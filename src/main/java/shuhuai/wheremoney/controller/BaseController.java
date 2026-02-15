@@ -28,28 +28,51 @@ import shuhuai.wheremoney.service.excep.user.UserNamePasswordErrorException;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 
+/**
+ * 基础控制器类
+ * 所有控制器的父类，用于统一处理异常
+ */
 @Slf4j
 public class BaseController {
+    /**
+     * 处理服务层异常
+     * @param error 服务层异常对象
+     * @return 异常响应结果
+     */
     @ExceptionHandler(BaseException.class)
     public Response<Object> handleServiceException(BaseException error) {
+        // 创建响应对象
         Response<Object> response = new Response<>();
+        // 根据异常类型设置响应码
         if (error instanceof UserNameOccupiedException || error instanceof TitleOccupiedException) {
+            // 用户名已被占用或标题已被占用
             response.setCode(400);
         } else if (error instanceof UserNamePasswordErrorException || error instanceof TokenExpireException) {
+            // 用户名密码错误或token过期
             response.setCode(401);
         } else if (error instanceof ParamsException) {
+            // 参数错误
             response.setCode(422);
         } else if (error instanceof ServerException) {
+            // 服务器错误
             response.setCode(500);
         } else if (error instanceof UserMissingException) {
+            // 用户不存在
             response.setCode(404);
         } else if (error instanceof PermissionDeniedException) {
+            // 权限不足
             response.setCode(403);
         }
+        // 设置响应消息
         response.setMessage(error.getMessage());
         return response;
     }
 
+    /**
+     * 处理Spring参数异常
+     * @param error Spring参数异常对象
+     * @return 异常响应结果
+     */
     @ExceptionHandler({
             MissingServletRequestParameterException.class,
             MethodArgumentTypeMismatchException.class,
@@ -59,9 +82,15 @@ public class BaseController {
             MissingServletRequestPartException.class
     })
     public Response<Object> handleSpringParamsException(Exception error) {
+        // 返回参数错误响应
         return new Response<>(422, "参数错误", error.getMessage());
     }
 
+    /**
+     * 处理数据库异常
+     * @param error 数据库异常对象
+     * @return 异常响应结果
+     */
     @ExceptionHandler({
             MyBatisSystemException.class,
             PersistenceException.class,
@@ -71,17 +100,27 @@ public class BaseController {
             DuplicateKeyException.class
     })
     public Response<Object> handleDatabaseException(Exception error) {
+        // 记录异常日志
         log.error("数据库/MyBatis异常", error);
+        // 处理数据完整性异常
         if (error instanceof DataIntegrityViolationException
                 || error instanceof SQLIntegrityConstraintViolationException) {
             return new Response<>(422, "参数错误", error.getMessage());
         }
+        // 返回数据库错误响应
         return new Response<>(500, "数据库错误", null);
     }
 
+    /**
+     * 处理未捕获的异常
+     * @param error 未捕获的异常对象
+     * @return 异常响应结果
+     */
     @ExceptionHandler(Exception.class)
     public Response<Object> handleException(Exception error) {
+        // 记录异常日志
         log.error("未处理异常", error);
+        // 返回服务器错误响应
         return new Response<>(500, "服务器错误", null);
     }
 }

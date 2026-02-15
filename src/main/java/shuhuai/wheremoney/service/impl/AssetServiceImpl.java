@@ -37,12 +37,11 @@ public class AssetServiceImpl implements AssetService {
     private RedisConnector redisConnector;
 
     @Override
-    public void addAsset(String userName, String assetName, BigDecimal balance, AssetType type, Integer billDate,
+    public void addAsset(Integer userId, String assetName, BigDecimal balance, AssetType type, Integer billDate,
                          Integer repayDate, BigDecimal quota, Boolean inTotal, String svg) {
-        if (userName == null || assetName == null || balance == null || type == null || inTotal == null) {
+        if (userId == null || assetName == null || balance == null || type == null || inTotal == null) {
             throw new ParamsException("参数错误");
         }
-        Integer userId = userMapper.selectUserByUserName(userName).getId();
         Asset asset = new Asset(userId, type, balance, assetName, billDate, repayDate, quota, inTotal, svg);
         Integer result = assetMapper.insertAssetSelective(asset);
         if (result != 1) {
@@ -52,11 +51,11 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public List<Asset> getAllAsset(String userName) {
-        if (userName == null) {
+    public List<Asset> getAllAsset(Integer userId) {
+        if (userId == null) {
             throw new ParamsException("参数错误");
         }
-        return assetMapper.selectAssetByUserId(userMapper.selectUserByUserName(userName).getId());
+        return assetMapper.selectAssetByUserId(userId);
     }
 
     @Override
@@ -85,11 +84,11 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public List<Map<String, Object>> getDayStatistic(String userName, Timestamp startTime, Timestamp endTime) {
-        if (userName == null || startTime == null || endTime == null) {
+    public List<Map<String, Object>> getDayStatistic(Integer userId, Timestamp startTime, Timestamp endTime) {
+        if (userId == null || startTime == null || endTime == null) {
             throw new ParamsException("参数错误");
         }
-        User user = userMapper.selectUserByUserName(userName);
+        User user = userMapper.selectUserByUserId(userId);
         if (user == null) {
             throw new ParamsException("参数错误");
         }
