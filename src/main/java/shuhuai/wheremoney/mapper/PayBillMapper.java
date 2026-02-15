@@ -29,4 +29,6 @@ public interface PayBillMapper {
     List<Integer> selectPayBillIdsByBookIdCategory(Integer bookId, Integer billCategoryId);
 
     Integer updatePayBillCategoryByBookIdCategory(Integer bookId, Integer oldBillCategoryId, Integer newBillCategoryId);
+
+    Integer deletePayBillByBookId(Integer bookId);
 }

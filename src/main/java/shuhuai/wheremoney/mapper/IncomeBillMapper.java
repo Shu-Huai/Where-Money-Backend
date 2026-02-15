@@ -27,4 +27,6 @@ public interface IncomeBillMapper {
     List<Integer> selectIncomeBillIdsByBookIdCategory(Integer bookId, Integer billCategoryId);
 
     Integer updateIncomeBillCategoryByBookIdCategory(Integer bookId, Integer oldBillCategoryId, Integer newBillCategoryId);
+
+    Integer deleteIncomeBillByBookId(Integer bookId);
 }

@@ -152,4 +152,15 @@ public class BookController extends BaseController {
         bookService.updateBillCategory(id, billCategoryName, svg, type, bookId);
         return new Response<>(200, "更新账单分类成功", null);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误"),
+    })
+    @RequestMapping(value = "/book", method = RequestMethod.DELETE)
+    @Operation(summary = "删除账本")
+    public Response<Object> deleteBook(@RequestParam Integer id) {
+        bookService.deleteBook(id);
+        return new Response<>(200, "删除账本成功", null);
+    }
 }

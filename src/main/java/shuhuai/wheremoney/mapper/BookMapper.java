@@ -31,4 +31,6 @@ public interface BookMapper {
     BigDecimal selectBalanceMonthByBookId(Integer bookId, Timestamp month);
 
     BigDecimal selectRefundMonthByBookId(Integer bookId, Timestamp month);
+
+     Integer deleteBook(Integer id);
 }

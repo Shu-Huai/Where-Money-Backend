@@ -128,4 +128,9 @@
         where book_id = #{bookId,jdbcType=INTEGER}
           and date_format(bill_time, '%Y%m') = date_format(#{month,jdbcType=TIMESTAMP}, '%Y%m')
     </select>
+    <delete id="deleteBook" parameterType="Integer">
+        delete
+        from book
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
 </mapper>

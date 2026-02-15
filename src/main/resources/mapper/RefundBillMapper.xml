@@ -131,4 +131,9 @@
         where pay_bill_id = #{payBillId,jdbcType=INTEGER}
         order by bill_time desc
     </select>
+    <delete id="deleteRefundBillByBookId" parameterType="Integer">
+        delete
+        from refund_bill
+        where book_id = #{bookId,jdbcType=INTEGER}
+    </delete>
 </mapper>

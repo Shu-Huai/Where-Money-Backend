@@ -21,4 +21,6 @@ public interface TransferBillMapper {
     List<TransferBill> selectTransferBillByBookIdTime(Integer bookId, Timestamp startTime, Timestamp endTime);
 
     TransferBill selectTransferBillById(Integer id);
+
+    Integer deleteTransferBillByBookId(Integer bookId);
 }

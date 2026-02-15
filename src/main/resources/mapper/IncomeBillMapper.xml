@@ -143,4 +143,9 @@
         where book_id = #{bookId,jdbcType=INTEGER}
           and bill_category_id = #{oldBillCategoryId,jdbcType=INTEGER}
     </update>
+    <delete id="deleteIncomeBillByBookId" parameterType="Integer">
+        delete
+        from income_bill
+        where book_id = #{bookId,jdbcType=INTEGER}
+    </delete>
 </mapper>

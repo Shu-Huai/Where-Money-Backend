@@ -21,4 +21,6 @@ public interface BillCategoryMapper {
     Integer updateBillCategorySelective(BillCategory billCategory);
 
     BillCategory selectBillCategoryByBookIdNameType(Integer bookId, String billCategoryName, BillType type);
+
+    Integer deleteBillCategoryByBookId(Integer bookId);
 }

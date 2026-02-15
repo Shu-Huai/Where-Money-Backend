@@ -136,4 +136,9 @@
         from transfer_bill
         where id = #{id,jdbcType=INTEGER}
     </select>
+    <delete id="deleteTransferBillByBookId" parameterType="Integer">
+        delete
+        from transfer_bill
+        where book_id = #{bookId,jdbcType=INTEGER}
+    </delete>
 </mapper>

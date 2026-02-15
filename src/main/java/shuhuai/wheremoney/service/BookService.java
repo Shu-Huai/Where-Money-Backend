@@ -30,4 +30,6 @@ public interface BookService {
     void deleteBillCategory(Integer billCategoryId);
 
     void updateBillCategory(Integer id, String billCategoryName, String svg, BillType type, Integer bookId);
+
+    void deleteBook(Integer id);
 }

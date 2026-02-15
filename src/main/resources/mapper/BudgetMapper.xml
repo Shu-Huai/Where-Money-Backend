@@ -96,4 +96,9 @@
         from budget
         where id = #{id,jdbcType=INTEGER}
     </delete>
+    <delete id="deleteBudgetByBookId" parameterType="Integer">
+        delete
+        from budget
+        where book_id = #{bookId,jdbcType=INTEGER}
+    </delete>
 </mapper>

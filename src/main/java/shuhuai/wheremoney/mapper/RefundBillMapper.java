@@ -23,4 +23,6 @@ public interface RefundBillMapper {
     RefundBill selectRefundBillById(Integer id);
 
     List<RefundBill> selectRefundBillByPayBillId(Integer payBillId);
+
+    Integer deleteRefundBillByBookId(Integer bookId);
 }

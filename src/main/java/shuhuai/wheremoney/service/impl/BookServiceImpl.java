@@ -7,8 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import shuhuai.wheremoney.entity.BillCategory;
 import shuhuai.wheremoney.entity.Book;
 import shuhuai.wheremoney.entity.User;
-import shuhuai.wheremoney.mapper.BookMapper;
-import shuhuai.wheremoney.mapper.UserMapper;
+import shuhuai.wheremoney.mapper.*;
 import shuhuai.wheremoney.service.BillCategoryService;
 import shuhuai.wheremoney.service.BookService;
 import shuhuai.wheremoney.service.BudgetService;
@@ -34,6 +33,18 @@ public class BookServiceImpl implements BookService {
     private BillCategoryService billCategoryService;
     @Resource
     private BudgetService budgetService;
+    @Resource
+    private PayBillMapper payBillMapper;
+    @Resource
+    private RefundBillMapper refundBillMapper;
+    @Resource
+    private IncomeBillMapper incomeBillMapper;
+    @Resource
+    private TransferBillMapper transferBillMapper;
+    @Resource
+    private BillCategoryMapper billCategoryMapper;
+    @Resource
+    private BudgetMapper budgetMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -150,5 +161,29 @@ public class BookServiceImpl implements BookService {
             throw new ParamsException("参数错误");
         }
         billCategoryService.updateBillCategory(id, billCategoryName, svg, type, bookId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteBook(Integer id) {
+        if (id == null) {
+            throw new ParamsException("参数错误");
+        }
+        Book book = bookMapper.selectBookById(id);
+        if (book == null) {
+            throw new ParamsException("账本不存在");
+        }
+
+        refundBillMapper.deleteRefundBillByBookId(id);
+        transferBillMapper.deleteTransferBillByBookId(id);
+        incomeBillMapper.deleteIncomeBillByBookId(id);
+        payBillMapper.deletePayBillByBookId(id);
+
+        budgetMapper.deleteBudgetByBookId(id);
+        billCategoryMapper.deleteBillCategoryByBookId(id);
+        Integer result = bookMapper.deleteBook(id);
+        if (result != 1) {
+            throw new ServerException("服务器错误");
+        }
     }
 }
