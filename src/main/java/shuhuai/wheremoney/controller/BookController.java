@@ -160,7 +160,8 @@ public class BookController extends BaseController {
     @RequestMapping(value = "/book", method = RequestMethod.DELETE)
     @Operation(summary = "删除账本")
     public Response<Object> deleteBook(@RequestParam Integer id) {
-        bookService.deleteBook(id);
+        String userName = TokenValidator.getUser().get("userName");
+        bookService.deleteBook(id, userName);
         return new Response<>(200, "删除账本成功", null);
     }
 }

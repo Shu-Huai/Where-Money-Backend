@@ -18,6 +18,7 @@ import shuhuai.wheremoney.response.Response;
 import shuhuai.wheremoney.service.excep.BaseException;
 import shuhuai.wheremoney.service.excep.book.TitleOccupiedException;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
+import shuhuai.wheremoney.service.excep.common.PermissionDeniedException;
 import shuhuai.wheremoney.service.excep.common.ServerException;
 import shuhuai.wheremoney.service.excep.common.TokenExpireException;
 import shuhuai.wheremoney.service.excep.user.UserMissingException;
@@ -42,6 +43,8 @@ public class BaseController {
             response.setCode(500);
         } else if (error instanceof UserMissingException) {
             response.setCode(404);
+        } else if (error instanceof PermissionDeniedException) {
+            response.setCode(403);
         }
         response.setMessage(error.getMessage());
         return response;

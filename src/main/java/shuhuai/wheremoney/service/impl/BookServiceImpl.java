@@ -13,6 +13,7 @@ import shuhuai.wheremoney.service.BookService;
 import shuhuai.wheremoney.service.BudgetService;
 import shuhuai.wheremoney.service.excep.book.TitleOccupiedException;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
+import shuhuai.wheremoney.service.excep.common.PermissionDeniedException;
 import shuhuai.wheremoney.service.excep.common.ServerException;
 import shuhuai.wheremoney.service.excep.user.UserMissingException;
 import shuhuai.wheremoney.type.BillType;
@@ -165,15 +166,25 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteBook(Integer id) {
+    public void deleteBook(Integer id, String userName) {
         if (id == null) {
             throw new ParamsException("参数错误");
+        }
+        User user = userMapper.selectUserByUserName(userName);
+        if (user == null) {
+            throw new UserMissingException("用户不存在");
         }
         Book book = bookMapper.selectBookById(id);
         if (book == null) {
             throw new ParamsException("账本不存在");
         }
-
+        if (!user.getId().equals(book.getUserId())) {
+            throw new PermissionDeniedException("权限不足");
+        }
+        List<Book> books = bookMapper.selectBookByUser(user);
+        if (books.size() == 1) {
+            throw new ParamsException("至少保留一个账本");
+        }
         refundBillMapper.deleteRefundBillByBookId(id);
         transferBillMapper.deleteTransferBillByBookId(id);
         incomeBillMapper.deleteIncomeBillByBookId(id);
