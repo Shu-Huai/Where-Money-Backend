@@ -186,6 +186,6 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         if (result != 1) {
             throw new ServerException("服务器错误");
         }
-        writeCategoryToRedis(billCategory);
+        redisConnector.deleteObject("bill_category:" + id);
     }
 }
