@@ -367,9 +367,9 @@ public class BillController extends BaseController {
     })
     @RequestMapping(value = "/image", method = RequestMethod.GET)
     @Operation(summary = "获得账单图片")
-    public Response<byte[]> getBillImage(@RequestParam Integer billId, @RequestParam BillType type) {
+    public Response<BillImageResponse> getBillImage(@RequestParam Integer billId, @RequestParam BillType type) {
         // 调用服务层获取账单图片
-        byte[] image = billService.getBillImage(billId, type);
+        BillImageResponse image = billService.getBillImage(billId, type);
         return new Response<>(200, "获得账单图片成功", image);
     }
 

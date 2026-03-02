@@ -35,8 +35,8 @@ public class TransferBill extends BaseBill {
      * @param image          图片
      */
     public TransferBill(Integer id, Integer bookId, Integer inAssetId, Integer outAssetId, BigDecimal amount, BigDecimal tranferFee, Timestamp billTime, String remark,
-                        byte[] image) {
-        super(id, bookId, amount, billTime, remark, image);
+                        byte[] image, String imageContentType) {
+        super(id, bookId, amount, billTime, remark, image, imageContentType);
         this.inAssetId = inAssetId;
         this.outAssetId = outAssetId;
         this.transferFee = tranferFee;
@@ -54,8 +54,8 @@ public class TransferBill extends BaseBill {
      * @param remark         备注
      * @param image          图片
      */
-    public TransferBill(Integer bookId, Integer inAssetId, Integer outAssetId, BigDecimal amount, BigDecimal tranferFee, Timestamp billTime, String remark, byte[] image) {
-        super(bookId, amount, billTime, remark, image);
+    public TransferBill(Integer bookId, Integer inAssetId, Integer outAssetId, BigDecimal amount, BigDecimal tranferFee, Timestamp billTime, String remark, byte[] image, String imageContentType) {
+        super(bookId, amount, billTime, remark, image, imageContentType);
         this.inAssetId = inAssetId;
         this.outAssetId = outAssetId;
         this.transferFee = tranferFee;

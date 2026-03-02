@@ -10,6 +10,7 @@ import shuhuai.wheremoney.mapper.IncomeBillMapper;
 import shuhuai.wheremoney.mapper.PayBillMapper;
 import shuhuai.wheremoney.mapper.RefundBillMapper;
 import shuhuai.wheremoney.mapper.TransferBillMapper;
+import shuhuai.wheremoney.response.bill.BillImageResponse;
 import shuhuai.wheremoney.service.AssetService;
 import shuhuai.wheremoney.service.BillCategoryService;
 import shuhuai.wheremoney.service.BillService;
@@ -255,8 +256,10 @@ public class BillServiceImpl implements BillService {
     public void addBill(Integer bookId, Integer inAssetId, Integer outAssetId, Integer payBillId, Integer billCategoryId,
                         BillType type, BigDecimal amount, BigDecimal transferFee, Timestamp time, String remark, Boolean refunded, MultipartFile file) {
         byte[] fileBytes = null;
+        String imageContentType = null;
         if (file != null) {
             try {
+                imageContentType = file.getContentType(); // image/heic, image/avif, image/jpeg...
                 fileBytes = file.getBytes();
             } catch (IOException e) {
                 throw new ServerException("服务器错误");
@@ -271,7 +274,7 @@ public class BillServiceImpl implements BillService {
                 // 验证金额为正数
                 validatePositiveAmount(amount);
                 // 创建支出账单对象
-                PayBill payBill = new PayBill(bookId, outAssetId, billCategoryId, amount, time, remark, false, fileBytes);
+                PayBill payBill = new PayBill(bookId, outAssetId, billCategoryId, amount, time, remark, false, fileBytes, imageContentType);
                 // 减少支出资产余额
                 assetService.changeBalanceRelative(outAssetId, amount.negate());
                 // 插入支出账单记录
@@ -291,7 +294,7 @@ public class BillServiceImpl implements BillService {
                 // 增加收入资产余额
                 assetService.changeBalanceRelative(inAssetId, amount);
                 // 创建收入账单对象
-                IncomeBill incomeBill = new IncomeBill(bookId, inAssetId, billCategoryId, amount, time, remark, fileBytes);
+                IncomeBill incomeBill = new IncomeBill(bookId, inAssetId, billCategoryId, amount, time, remark, fileBytes, imageContentType);
                 // 插入收入账单记录
                 incomeBillMapper.insertIncomeBillSelective(incomeBill);
                 // 写入Redis缓存
@@ -310,7 +313,7 @@ public class BillServiceImpl implements BillService {
                 assetService.changeBalanceRelative(outAssetId, amount.negate());
                 // 创建转账账单对象
                 TransferBill transferBill = new TransferBill(bookId, inAssetId, outAssetId, amount,
-                        transferFee == null ? BigDecimal.ZERO : transferFee, time, remark, fileBytes);
+                        transferFee == null ? BigDecimal.ZERO : transferFee, time, remark, fileBytes, imageContentType);
                 // 插入转账账单记录
                 transferBillMapper.insertTransferBillSelective(transferBill);
                 // 写入Redis缓存
@@ -336,7 +339,7 @@ public class BillServiceImpl implements BillService {
                     throw new ParamsException("退款金额超过可退金额");
                 }
                 // 创建退款账单对象
-                RefundBill refundBill = new RefundBill(bookId, payBillId, inAssetId, amount, time, remark, fileBytes);
+                RefundBill refundBill = new RefundBill(bookId, payBillId, inAssetId, amount, time, remark, fileBytes, imageContentType);
                 // 增加退款资产余额
                 assetService.changeBalanceRelative(inAssetId, amount);
                 // 插入退款账单记录
@@ -649,8 +652,8 @@ public class BillServiceImpl implements BillService {
         // 如果没有支出账单，返回默认值
         if (payBills.isEmpty()) {
             return new HashMap<>(Map.of(
-                    "max", new PayBill(null, null, null, null, BigDecimal.ZERO, null, null, null, null),
-                    "min", new PayBill(null, null, null, null, BigDecimal.ZERO, null, null, null, null)));
+                    "max", new PayBill(null, null, null, null, BigDecimal.ZERO, null, null, null, null, null),
+                    "min", new PayBill(null, null, null, null, BigDecimal.ZERO, null, null, null, null, null)));
         }
         PayBill max = null;
         PayBill min = null;
@@ -689,8 +692,8 @@ public class BillServiceImpl implements BillService {
         List<IncomeBill> incomeBills = incomeBillMapper.selectIncomeBillByBookIdTime(bookId, startTime, endTime);
         if (incomeBills.isEmpty()) {
             return new HashMap<>(Map.of(
-                    "max", new IncomeBill(null, null, null, null, BigDecimal.ZERO, null, null, null),
-                    "min", new IncomeBill(null, null, null, null, BigDecimal.ZERO, null, null, null)));
+                    "max", new IncomeBill(null, null, null, null, BigDecimal.ZERO, null, null, null, null),
+                    "min", new IncomeBill(null, null, null, null, BigDecimal.ZERO, null, null, null, null)));
         }
         IncomeBill max = null;
         IncomeBill min = null;
@@ -714,7 +717,7 @@ public class BillServiceImpl implements BillService {
      * @throws ParamsException 参数错误时抛出
      */
     @Override
-    public byte[] getBillImage(Integer id, BillType type) {
+    public BillImageResponse getBillImage(Integer id, BillType type) {
         if (id == null || type == null) {
             throw new ParamsException("参数错误");
         }
@@ -724,28 +727,28 @@ public class BillServiceImpl implements BillService {
                 if (payBill == null) {
                     throw new ParamsException("参数错误");
                 }
-                return payBill.getImage();
+                return new BillImageResponse(payBill.getImageContentType(), payBill.getImage());
             }
             case 收入 -> {
                 IncomeBill incomeBill = incomeBillMapper.selectIncomeBillById(id);
                 if (incomeBill == null) {
                     throw new ParamsException("参数错误");
                 }
-                return incomeBill.getImage();
+                return new BillImageResponse(incomeBill.getImageContentType(), incomeBill.getImage());
             }
             case 退款 -> {
                 RefundBill refundBill = refundBillMapper.selectRefundBillById(id);
                 if (refundBill == null) {
                     throw new ParamsException("参数错误");
                 }
-                return refundBill.getImage();
+                return new BillImageResponse(refundBill.getImageContentType(), refundBill.getImage());
             }
             case 转账 -> {
                 TransferBill transferBill = transferBillMapper.selectTransferBillById(id);
                 if (transferBill == null) {
                     throw new ParamsException("参数错误");
                 }
-                return transferBill.getImage();
+                return new BillImageResponse(transferBill.getImageContentType(), transferBill.getImage());
             }
             default -> throw new ParamsException("参数错误");
         }
@@ -782,9 +785,11 @@ public class BillServiceImpl implements BillService {
             throw new ParamsException("参数错误");
         }
         byte[] fileBytes = null;
+        String fileContentType = null;
         if (file != null) {
             try {
                 fileBytes = file.getBytes();
+                fileContentType = file.getContentType();
             } catch (IOException e) {
                 throw new ServerException("服务器错误");
             }
@@ -799,7 +804,7 @@ public class BillServiceImpl implements BillService {
                 // 记录原账本ID
                 Integer originBookId = originBill.getBookId();
                 // 创建新支出账单对象
-                PayBill newBill = new PayBill(id, bookId, outAssetId, billCategoryId, amount, billTime, remark, refunded, fileBytes);
+                PayBill newBill = new PayBill(id, bookId, outAssetId, billCategoryId, amount, billTime, remark, refunded, fileBytes, fileContentType);
                 // 确定当前账本ID
                 Integer currentBookId = newBill.getBookId() == null ? originBookId : newBill.getBookId();
                 // 确定目标金额
@@ -875,7 +880,7 @@ public class BillServiceImpl implements BillService {
                     throw new ParamsException("参数错误");
                 }
                 // 创建新收入账单对象
-                IncomeBill newBill = new IncomeBill(id, bookId, inAssetId, billCategoryId, amount, billTime, remark, fileBytes);
+                IncomeBill newBill = new IncomeBill(id, bookId, inAssetId, billCategoryId, amount, billTime, remark, fileBytes, fileContentType);
                 // 确定目标金额
                 BigDecimal targetAmount = newBill.getAmount() == null ? originBill.getAmount() : newBill.getAmount();
                 // 验证金额为正数
@@ -911,7 +916,7 @@ public class BillServiceImpl implements BillService {
                 // 记录原账本ID
                 Integer originBookId = originBill.getBookId();
                 // 创建新退款账单对象
-                RefundBill newBill = new RefundBill(id, bookId, payBillId, inAssetId, amount, billTime, remark, fileBytes);
+                RefundBill newBill = new RefundBill(id, bookId, payBillId, inAssetId, amount, billTime, remark, fileBytes, fileContentType);
                 // 验证支出账单ID不变
                 if (newBill.getPayBillId() != null && !Objects.equals(newBill.getPayBillId(), originBill.getPayBillId())) {
                     throw new ParamsException("参数错误");
@@ -974,7 +979,7 @@ public class BillServiceImpl implements BillService {
                     throw new ParamsException("参数错误");
                 }
                 // 创建新转账账单对象
-                TransferBill newBill = new TransferBill(id, bookId, inAssetId, outAssetId, amount, transferFee, billTime, remark, fileBytes);
+                TransferBill newBill = new TransferBill(id, bookId, inAssetId, outAssetId, amount, transferFee, billTime, remark, fileBytes, fileContentType);
                 // 确定目标入账资产ID
                 Integer targetInAssetId = newBill.getInAssetId() == null ? originBill.getInAssetId() : newBill.getInAssetId();
                 // 确定目标出账资产ID
@@ -1155,6 +1160,7 @@ public class BillServiceImpl implements BillService {
                     throw new ParamsException("参数错误");
                 }
                 payBill.setImage(null);
+                payBill.setImageContentType(null);
                 result = payBillMapper.updatePayBillById(payBill);
             }
             case 收入 -> {
@@ -1163,6 +1169,7 @@ public class BillServiceImpl implements BillService {
                     throw new ParamsException("参数错误");
                 }
                 incomeBill.setImage(null);
+                incomeBill.setImageContentType(null);
                 result = incomeBillMapper.updateIncomeBillById(incomeBill);
             }
             case 退款 -> {
@@ -1171,6 +1178,7 @@ public class BillServiceImpl implements BillService {
                     throw new ParamsException("参数错误");
                 }
                 refundBill.setImage(null);
+                refundBill.setImageContentType(null);
                 result = refundBillMapper.updateRefundBillById(refundBill);
             }
             case 转账 -> {
@@ -1179,6 +1187,7 @@ public class BillServiceImpl implements BillService {
                     throw new ParamsException("参数错误");
                 }
                 transferBill.setImage(null);
+                transferBill.setImageContentType(null);
                 result = transferBillMapper.updateTransferBillById(transferBill);
             }
         }

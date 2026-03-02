@@ -4,6 +4,7 @@ import org.springframework.web.multipart.MultipartFile;
 import shuhuai.wheremoney.entity.BaseBill;
 import shuhuai.wheremoney.entity.IncomeBill;
 import shuhuai.wheremoney.entity.PayBill;
+import shuhuai.wheremoney.response.bill.BillImageResponse;
 import shuhuai.wheremoney.type.BillType;
 
 import java.math.BigDecimal;
@@ -118,7 +119,7 @@ public interface BillService {
      * @param type 账单类型
      * @return 图片数据
      */
-    byte[] getBillImage(Integer id, BillType type);
+    BillImageResponse getBillImage(Integer id, BillType type);
 
     /**
      * 修改账单

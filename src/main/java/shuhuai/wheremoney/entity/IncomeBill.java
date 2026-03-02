@@ -32,8 +32,8 @@ public class IncomeBill extends BaseBill {
      * @param remark         备注
      * @param image          图片
      */
-    public IncomeBill(Integer id, Integer bookId, Integer incomeAssetId, Integer billCategoryId, BigDecimal amount, Timestamp billTime, String remark, byte[] image) {
-        super(id, bookId, amount, billTime, remark, image);
+    public IncomeBill(Integer id, Integer bookId, Integer incomeAssetId, Integer billCategoryId, BigDecimal amount, Timestamp billTime, String remark, byte[] image, String imageContentType) {
+        super(id, bookId, amount, billTime, remark, image, imageContentType);
         this.incomeAssetId = incomeAssetId;
         this.billCategoryId = billCategoryId;
     }
@@ -49,8 +49,8 @@ public class IncomeBill extends BaseBill {
      * @param remark         备注
      * @param image          图片
      */
-    public IncomeBill(Integer bookId, Integer incomeAssetId, Integer billCategoryId, BigDecimal amount, Timestamp billTime, String remark, byte[] image) {
-        super(bookId, amount, billTime, remark, image);
+    public IncomeBill(Integer bookId, Integer incomeAssetId, Integer billCategoryId, BigDecimal amount, Timestamp billTime, String remark, byte[] image, String imageContentType) {
+        super(bookId, amount, billTime, remark, image, imageContentType);
         this.incomeAssetId = incomeAssetId;
         this.billCategoryId = billCategoryId;
     }

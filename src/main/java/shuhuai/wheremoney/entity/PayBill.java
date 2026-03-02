@@ -46,8 +46,8 @@ public class PayBill extends BaseBill implements Serializable {
      * @param refunded       是否已退款
      * @param image          图片
      */
-    public PayBill(Integer id, Integer bookId, Integer payAssetId, Integer billCategoryId, BigDecimal amount, Timestamp billTime, String remark, Boolean refunded, byte[] image) {
-        super(id, bookId, amount, billTime, remark, image);
+    public PayBill(Integer id, Integer bookId, Integer payAssetId, Integer billCategoryId, BigDecimal amount, Timestamp billTime, String remark, Boolean refunded, byte[] image, String imageContentType) {
+        super(id, bookId, amount, billTime, remark, image, imageContentType);
         this.payAssetId = payAssetId;
         this.billCategoryId = billCategoryId;
         this.refunded = refunded;
@@ -65,8 +65,8 @@ public class PayBill extends BaseBill implements Serializable {
      * @param refunded       是否已退款
      * @param image          图片
      */
-    public PayBill(Integer bookId, Integer payAssetId, Integer billCategoryId, BigDecimal amount, Timestamp billTime, String remark, Boolean refunded, byte[] image) {
-        super(bookId, amount, billTime, remark, image);
+    public PayBill(Integer bookId, Integer payAssetId, Integer billCategoryId, BigDecimal amount, Timestamp billTime, String remark, Boolean refunded, byte[] image, String imageContentType) {
+        super(bookId, amount, billTime, remark, image, imageContentType);
         this.payAssetId = payAssetId;
         this.billCategoryId = billCategoryId;
         this.refunded = refunded;

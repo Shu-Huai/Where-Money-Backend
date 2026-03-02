@@ -22,6 +22,7 @@ public class BaseBill implements Serializable {
     private Timestamp billTime;
     private String remark;
     private byte[] image;
+    private String imageContentType;
 
     /**
      * 构造方法
@@ -41,12 +42,13 @@ public class BaseBill implements Serializable {
      * @param remark   备注
      * @param image    图片
      */
-    public BaseBill(Integer bookId, BigDecimal amount, Timestamp billTime, String remark, byte[] image) {
+    public BaseBill(Integer bookId, BigDecimal amount, Timestamp billTime, String remark, byte[] image, String imageContentType) {
         this.bookId = bookId;
         this.amount = amount;
         this.billTime = billTime;
         this.remark = remark;
         this.image = image;
+        this.imageContentType = imageContentType;
     }
 
 }
