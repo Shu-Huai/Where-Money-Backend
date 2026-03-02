@@ -19,6 +19,7 @@
         <result column="bill_time" jdbcType="TIMESTAMP" javaType="java.sql.Timestamp" property="billTime"/>
         <result column="remark" jdbcType="VARCHAR" javaType="String" property="remark"/>
         <result column="image" property="image" typeHandler="org.apache.ibatis.type.BlobTypeHandler"/>
+        <result column="image_content_type" jdbcType="VARCHAR" javaType="String" property="imageContentType"/>
     </resultMap>
     
     <!--
@@ -54,6 +55,9 @@
             <if test="image != null">
                 image,
             </if>
+            <if test="imageContentType != null">
+                image_content_type,
+            </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="bookId != null">
@@ -79,6 +83,9 @@
             </if>
             <if test="image != null">
                 #{image,jdbcType=BLOB},
+            </if>
+            <if test="imageContentType != null">
+                #{imageContentType,jdbcType=VARCHAR},
             </if>
         </trim>
     </insert>
@@ -124,6 +131,9 @@
             <if test="image != null">
                 image = #{image,jdbcType=BLOB},
             </if>
+            <if test="imageContentType != null">
+                image_content_type = #{imageContentType,jdbcType=VARCHAR},
+            </if>
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
@@ -143,6 +153,7 @@
             bill_time = #{billTime,jdbcType=DATE},
             remark = #{remark,jdbcType=VARCHAR},
             image = #{image,jdbcType=BLOB},
+            image_content_type = #{imageContentType,jdbcType=VARCHAR},
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
