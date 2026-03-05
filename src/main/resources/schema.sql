@@ -42,8 +42,17 @@ create table if not exists asset
         foreign key (user_id) references user (id)
 );
 
-create index user_id
-    on asset (user_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'asset'
+      and index_name = 'user_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index user_id on asset (user_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
 create table if not exists book
 (
@@ -97,14 +106,41 @@ create table if not exists income_bill
         foreign key (bill_category_id) references bill_category (id)
 );
 
-create index bill_category_id
-    on income_bill (bill_category_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'income_bill'
+      and index_name = 'bill_category_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index bill_category_id on income_bill (bill_category_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
-create index book_id
-    on income_bill (book_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'income_bill'
+      and index_name = 'book_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index book_id on income_bill (book_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
-create index income_asset_id
-    on income_bill (income_asset_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'income_bill'
+      and index_name = 'income_asset_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index income_asset_id on income_bill (income_asset_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
 create table if not exists pay_bill
 (
@@ -130,14 +166,41 @@ create table if not exists pay_bill
 )
     comment '支出账单';
 
-create index bill_category_id
-    on pay_bill (bill_category_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'pay_bill'
+      and index_name = 'bill_category_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index bill_category_id on pay_bill (bill_category_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
-create index book_id
-    on pay_bill (book_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'pay_bill'
+      and index_name = 'book_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index book_id on pay_bill (book_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
-create index pay_asset_id
-    on pay_bill (pay_asset_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'pay_bill'
+      and index_name = 'pay_asset_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index pay_asset_id on pay_bill (pay_asset_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
 create table if not exists refund_bill
 (
@@ -161,14 +224,41 @@ create table if not exists refund_bill
         foreign key (refund_asset_id) references asset (id)
 );
 
-create index book_id
-    on refund_bill (book_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'refund_bill'
+      and index_name = 'book_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index book_id on refund_bill (book_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
-create index pay_bill_id
-    on refund_bill (pay_bill_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'refund_bill'
+      and index_name = 'pay_bill_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index pay_bill_id on refund_bill (pay_bill_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
-create index refund_asset_id
-    on refund_bill (refund_asset_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'refund_bill'
+      and index_name = 'refund_asset_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index refund_asset_id on refund_bill (refund_asset_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
 create table if not exists transfer_bill
 (
@@ -193,11 +283,38 @@ create table if not exists transfer_bill
         foreign key (out_asset_id) references asset (id)
 );
 
-create index book_id
-    on transfer_bill (book_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'transfer_bill'
+      and index_name = 'book_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index book_id on transfer_bill (book_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
-create index in_asset_id
-    on transfer_bill (in_asset_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'transfer_bill'
+      and index_name = 'in_asset_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index in_asset_id on transfer_bill (in_asset_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
 
-create index out_asset_id
-    on transfer_bill (out_asset_id);
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'transfer_bill'
+      and index_name = 'out_asset_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index out_asset_id on transfer_bill (out_asset_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
