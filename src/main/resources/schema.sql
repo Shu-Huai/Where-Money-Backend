@@ -1,4 +1,4 @@
-create table budget
+create table if not exists budget
 (
     id               int auto_increment
         primary key,
@@ -9,7 +9,7 @@ create table budget
     limit_amount     decimal(10, 2)              null
 );
 
-create table user
+create table if not exists user
 (
     id              int auto_increment
         primary key,
@@ -23,7 +23,7 @@ create table user
         unique (user_name)
 );
 
-create table asset
+create table if not exists asset
 (
     id         int auto_increment
         primary key,
@@ -45,7 +45,7 @@ create table asset
 create index user_id
     on asset (user_id);
 
-create table book
+create table if not exists book
 (
     id           int auto_increment
         primary key,
@@ -61,7 +61,7 @@ create table book
         foreign key (user_id) references user (id)
 );
 
-create table bill_category
+create table if not exists bill_category
 (
     id                 int auto_increment
         primary key,
@@ -75,7 +75,7 @@ create table bill_category
         foreign key (book_id) references book (id)
 );
 
-create table income_bill
+create table if not exists income_bill
 (
     id                 int auto_increment
         primary key,
@@ -106,7 +106,7 @@ create index book_id
 create index income_asset_id
     on income_bill (income_asset_id);
 
-create table pay_bill
+create table if not exists pay_bill
 (
     id                 int auto_increment
         primary key,
@@ -139,7 +139,7 @@ create index book_id
 create index pay_asset_id
     on pay_bill (pay_asset_id);
 
-create table refund_bill
+create table if not exists refund_bill
 (
     id                 int auto_increment
         primary key,
@@ -170,7 +170,7 @@ create index pay_bill_id
 create index refund_asset_id
     on refund_bill (refund_asset_id);
 
-create table transfer_bill
+create table if not exists transfer_bill
 (
     id                 int auto_increment
         primary key,
@@ -201,4 +201,3 @@ create index in_asset_id
 
 create index out_asset_id
     on transfer_bill (out_asset_id);
-
