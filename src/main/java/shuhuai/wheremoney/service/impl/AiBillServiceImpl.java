@@ -1,0 +1,568 @@
+package shuhuai.wheremoney.service.impl;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import shuhuai.wheremoney.entity.AiBillParseLog;
+import shuhuai.wheremoney.entity.Asset;
+import shuhuai.wheremoney.entity.BillCategory;
+import shuhuai.wheremoney.entity.Book;
+import shuhuai.wheremoney.mapper.AiBillParseLogMapper;
+import shuhuai.wheremoney.mapper.BookMapper;
+import shuhuai.wheremoney.response.bill.AiParseBillResponse;
+import shuhuai.wheremoney.service.AiBillService;
+import shuhuai.wheremoney.service.AssetService;
+import shuhuai.wheremoney.service.BillCategoryService;
+import shuhuai.wheremoney.service.excep.BaseException;
+import shuhuai.wheremoney.service.excep.ai.AiAmbiguousMatchException;
+import shuhuai.wheremoney.service.excep.ai.AiAssetNotFoundException;
+import shuhuai.wheremoney.service.excep.ai.AiCategoryNotFoundException;
+import shuhuai.wheremoney.service.excep.ai.AiInfoMissingException;
+import shuhuai.wheremoney.service.excep.ai.AiInvokeException;
+import shuhuai.wheremoney.service.excep.ai.AiIrrelevantTextException;
+import shuhuai.wheremoney.service.excep.ai.AiRateLimitException;
+import shuhuai.wheremoney.service.excep.ai.AiResponseFormatException;
+import shuhuai.wheremoney.service.excep.ai.AiTimeoutException;
+import shuhuai.wheremoney.service.excep.ai.AiUnsupportedTypeException;
+import shuhuai.wheremoney.service.excep.common.ParamsException;
+import shuhuai.wheremoney.service.excep.common.PermissionDeniedException;
+import shuhuai.wheremoney.type.BillType;
+import shuhuai.wheremoney.utils.RedisConnector;
+import shuhuai.wheremoney.utils.TimeComputer;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+/**
+ * AI账单解析服务实现
+ */
+@Service
+@Slf4j
+public class AiBillServiceImpl implements AiBillService {
+    private static final ZoneId ZONE_ID = ZoneId.of("Asia/Shanghai");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter RATE_LIMIT_KEY_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
+    private static final String STATUS_SUCCESS = "SUCCESS";
+    private static final String STATUS_IRRELEVANT = "IRRELEVANT";
+    private static final String STATUS_MISSING_INFO = "MISSING_INFO";
+    private static final String STATUS_ASSET_NOT_FOUND = "ASSET_NOT_FOUND";
+    private static final String STATUS_CATEGORY_NOT_FOUND = "CATEGORY_NOT_FOUND";
+    private static final Map<String, Object> EXTRA_BODY = Map.of("enable_thinking", Boolean.FALSE);
+
+    private final ChatClient chatClient;
+    private final ExecutorService llmExecutor = Executors.newVirtualThreadPerTaskExecutor();
+
+    @Value("${ai.bill.parse.limit-per-minute:20}")
+    private Integer limitPerMinute;
+
+    @Value("${ai.bill.parse.timeout-ms:12000}")
+    private Long timeoutMs;
+
+    @Value("${spring.ai.openai.chat.options.model:}")
+    private String modelName;
+
+    @Resource
+    private AssetService assetService;
+
+    @Resource
+    private BillCategoryService billCategoryService;
+
+    @Resource
+    private BookMapper bookMapper;
+
+    @Resource
+    private RedisConnector redisConnector;
+
+    @Resource
+    private AiBillParseLogMapper aiBillParseLogMapper;
+
+    public AiBillServiceImpl(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        llmExecutor.shutdownNow();
+    }
+
+    @Override
+    public AiParseBillResponse parseBill(Integer userId, Integer bookId, BillType type, String text) {
+        long startTime = System.currentTimeMillis();
+        String llmRaw = null;
+        String logStatus = "FAILED";
+        String errorCode = null;
+        String errorMessage = null;
+        try {
+            validateParams(userId, bookId, type, text);
+            validateBookPermission(userId, bookId);
+            validateType(type);
+            checkRateLimit(userId);
+
+            List<Asset> assets = assetService.getAllAsset(userId);
+            if (assets == null) {
+                assets = new ArrayList<>();
+            }
+            if (assets.isEmpty()) {
+                throw new AiAssetNotFoundException("没有可用账户");
+            }
+            List<BillCategory> categories = getCategoriesByType(bookId, type);
+
+            String systemPrompt = buildSystemPrompt(type, assets, categories);
+            llmRaw = callLlm(systemPrompt, text);
+            LlmParseResult llmResult = parseLlmResult(llmRaw);
+            AiParseBillResponse response = buildResponse(type, assets, categories, llmResult);
+            logStatus = STATUS_SUCCESS;
+            return response;
+        } catch (BaseException e) {
+            logStatus = mapLogStatus(e);
+            errorCode = e.getClass().getSimpleName();
+            errorMessage = e.getMessage();
+            throw e;
+        } catch (Exception e) {
+            errorCode = AiInvokeException.class.getSimpleName();
+            errorMessage = e.getMessage();
+            throw new AiInvokeException("AI调用失败");
+        } finally {
+            writeParseLog(userId, bookId, type, text, llmRaw, logStatus, errorCode, errorMessage, System.currentTimeMillis() - startTime);
+        }
+    }
+
+    private void validateParams(Integer userId, Integer bookId, BillType type, String text) {
+        if (userId == null || bookId == null || type == null || text == null || text.trim().isEmpty()) {
+            throw new ParamsException("参数错误");
+        }
+    }
+
+    private void validateBookPermission(Integer userId, Integer bookId) {
+        Book book = bookMapper.selectBookById(bookId);
+        if (book == null) {
+            throw new ParamsException("账本不存在");
+        }
+        if (!Objects.equals(book.getUserId(), userId)) {
+            throw new PermissionDeniedException("权限不足");
+        }
+    }
+
+    private void validateType(BillType type) {
+        if (type == BillType.退款) {
+            throw new AiUnsupportedTypeException("退款暂不支持AI解析");
+        }
+    }
+
+    private void checkRateLimit(Integer userId) {
+        if (limitPerMinute == null || limitPerMinute <= 0) {
+            return;
+        }
+        String minuteKey = LocalDateTime.now(ZONE_ID).format(RATE_LIMIT_KEY_TIME_FORMATTER);
+        String redisKey = "ai:bill:parse:limit:" + userId + ":" + minuteKey;
+        Long count = redisConnector.increaseObject(redisKey, 1L);
+        if (count == null) {
+            throw new AiInvokeException("限流服务异常");
+        }
+        if (count == 1) {
+            redisConnector.setExpire(redisKey, 120L);
+        }
+        if (count > limitPerMinute) {
+            throw new AiRateLimitException("请求过于频繁，请稍后再试");
+        }
+    }
+
+    private List<BillCategory> getCategoriesByType(Integer bookId, BillType type) {
+        if (type == BillType.转账) {
+            return new ArrayList<>();
+        }
+        List<BillCategory> categories = billCategoryService.getBillCategoriesByBookType(bookId, type);
+        if (categories == null || categories.isEmpty()) {
+            throw new AiCategoryNotFoundException("没有可用分类");
+        }
+        return categories;
+    }
+
+    private String callLlm(String systemPrompt, String text) {
+        Future<String> future = llmExecutor.submit(() ->
+                chatClient.prompt()
+                        .options(OpenAiChatOptions.builder().extraBody(EXTRA_BODY).build())
+                        .system(systemPrompt)
+                        .user(text)
+                        .call()
+                        .content()
+        );
+        try {
+            return future.get(timeoutMs == null ? 12000L : timeoutMs, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            throw new AiTimeoutException("AI解析超时");
+        } catch (ExecutionException e) {
+            throw new AiInvokeException("AI调用失败");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AiInvokeException("AI调用失败");
+        }
+    }
+
+    private LlmParseResult parseLlmResult(String llmRaw) {
+        if (llmRaw == null || llmRaw.trim().isEmpty()) {
+            throw new AiResponseFormatException("AI未返回有效内容");
+        }
+        String jsonText = extractJson(llmRaw);
+        JSONObject object;
+        try {
+            object = JSON.parseObject(jsonText);
+        } catch (Exception e) {
+            throw new AiResponseFormatException("AI返回格式错误");
+        }
+        if (object == null) {
+            throw new AiResponseFormatException("AI返回格式错误");
+        }
+        String status = trimToNull(object.getString("status"));
+        String reason = trimToNull(object.getString("reason"));
+        if (status == null) {
+            throw new AiResponseFormatException("AI返回格式错误");
+        }
+        if (!STATUS_SUCCESS.equals(status)) {
+            handleFailedStatus(status, reason);
+        }
+        LlmParseResult result = new LlmParseResult();
+        result.amount = parseBigDecimal(object.get("amount"), true);
+        result.transferFee = parseBigDecimal(object.get("transferFee"), false);
+        result.billTime = parseTimestamp(trimToNull(object.getString("billTime")));
+        result.remark = trimToNull(object.getString("remark"));
+        result.assetName = trimToNull(object.getString("assetName"));
+        result.billCategoryName = trimToNull(object.getString("billCategoryName"));
+        result.outAssetName = trimToNull(object.getString("outAssetName"));
+        result.inAssetName = trimToNull(object.getString("inAssetName"));
+        return result;
+    }
+
+    private void handleFailedStatus(String status, String reason) {
+        String message = reason == null ? "AI解析失败" : reason;
+        switch (status) {
+            case STATUS_IRRELEVANT -> throw new AiIrrelevantTextException(message);
+            case STATUS_MISSING_INFO -> throw new AiInfoMissingException(message);
+            case STATUS_ASSET_NOT_FOUND -> throw new AiAssetNotFoundException(message);
+            case STATUS_CATEGORY_NOT_FOUND -> throw new AiCategoryNotFoundException(message);
+            default -> throw new AiResponseFormatException("AI返回了不支持的状态: " + status);
+        }
+    }
+
+    private AiParseBillResponse buildResponse(BillType type, List<Asset> assets, List<BillCategory> categories, LlmParseResult llmResult) {
+        if (llmResult.amount == null || llmResult.amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AiInfoMissingException("金额缺失或不合法");
+        }
+        AiParseBillResponse response = new AiParseBillResponse();
+        response.setType(type);
+        response.setAmount(llmResult.amount);
+        response.setBillTime(llmResult.billTime);
+        response.setRemark(llmResult.remark);
+        switch (type) {
+            case 支出 -> {
+                Asset outAsset = matchAsset(llmResult.assetName, assets);
+                BillCategory category = matchCategory(llmResult.billCategoryName, categories);
+                response.setOutAssetId(outAsset.getId());
+                response.setOutAssetName(outAsset.getAssetName());
+                response.setBillCategoryId(category.getId());
+                response.setBillCategoryName(category.getBillCategoryName());
+            }
+            case 收入 -> {
+                Asset inAsset = matchAsset(llmResult.assetName, assets);
+                BillCategory category = matchCategory(llmResult.billCategoryName, categories);
+                response.setInAssetId(inAsset.getId());
+                response.setInAssetName(inAsset.getAssetName());
+                response.setBillCategoryId(category.getId());
+                response.setBillCategoryName(category.getBillCategoryName());
+            }
+            case 转账 -> {
+                Asset outAsset = matchAsset(llmResult.outAssetName, assets);
+                Asset inAsset = matchAsset(llmResult.inAssetName, assets);
+                if (Objects.equals(outAsset.getId(), inAsset.getId())) {
+                    throw new AiInfoMissingException("转入和转出账户不能相同");
+                }
+                response.setOutAssetId(outAsset.getId());
+                response.setOutAssetName(outAsset.getAssetName());
+                response.setInAssetId(inAsset.getId());
+                response.setInAssetName(inAsset.getAssetName());
+                if (llmResult.transferFee != null) {
+                    if (llmResult.transferFee.compareTo(BigDecimal.ZERO) < 0) {
+                        throw new AiInfoMissingException("手续费不能小于0");
+                    }
+                    response.setTransferFee(llmResult.transferFee);
+                }
+            }
+            default -> throw new AiUnsupportedTypeException("不支持的账单类型");
+        }
+        return response;
+    }
+
+    private Asset matchAsset(String inputName, List<Asset> assets) {
+        if (inputName == null) {
+            throw new AiInfoMissingException("缺少账户信息");
+        }
+        String normalizedInput = normalize(inputName);
+        List<Asset> exact = new ArrayList<>();
+        for (Asset asset : assets) {
+            if (asset != null && asset.getAssetName() != null && normalize(asset.getAssetName()).equals(normalizedInput)) {
+                exact.add(asset);
+            }
+        }
+        if (exact.size() == 1) {
+            return exact.getFirst();
+        }
+        if (exact.size() > 1) {
+            throw new AiAmbiguousMatchException("账户匹配到多个结果: " + inputName);
+        }
+        List<Asset> fuzzy = new ArrayList<>();
+        for (Asset asset : assets) {
+            if (asset == null || asset.getAssetName() == null) {
+                continue;
+            }
+            String normalizedName = normalize(asset.getAssetName());
+            if (normalizedName.contains(normalizedInput) || normalizedInput.contains(normalizedName)) {
+                fuzzy.add(asset);
+            }
+        }
+        if (fuzzy.size() == 1) {
+            return fuzzy.getFirst();
+        }
+        if (fuzzy.size() > 1) {
+            throw new AiAmbiguousMatchException("账户匹配到多个结果: " + inputName);
+        }
+        throw new AiAssetNotFoundException("未找到账户: " + inputName);
+    }
+
+    private BillCategory matchCategory(String inputName, List<BillCategory> categories) {
+        if (inputName == null) {
+            throw new AiInfoMissingException("缺少分类信息");
+        }
+        String normalizedInput = normalize(inputName);
+        List<BillCategory> exact = new ArrayList<>();
+        for (BillCategory category : categories) {
+            if (category != null && category.getBillCategoryName() != null
+                    && normalize(category.getBillCategoryName()).equals(normalizedInput)) {
+                exact.add(category);
+            }
+        }
+        if (exact.size() == 1) {
+            return exact.getFirst();
+        }
+        if (exact.size() > 1) {
+            throw new AiAmbiguousMatchException("分类匹配到多个结果: " + inputName);
+        }
+        List<BillCategory> fuzzy = new ArrayList<>();
+        for (BillCategory category : categories) {
+            if (category == null || category.getBillCategoryName() == null) {
+                continue;
+            }
+            String normalizedName = normalize(category.getBillCategoryName());
+            if (normalizedName.contains(normalizedInput) || normalizedInput.contains(normalizedName)) {
+                fuzzy.add(category);
+            }
+        }
+        if (fuzzy.size() == 1) {
+            return fuzzy.getFirst();
+        }
+        if (fuzzy.size() > 1) {
+            throw new AiAmbiguousMatchException("分类匹配到多个结果: " + inputName);
+        }
+        throw new AiCategoryNotFoundException("未找到分类: " + inputName);
+    }
+
+    private String buildSystemPrompt(BillType type, List<Asset> assets, List<BillCategory> categories) {
+        LocalDateTime now = LocalDateTime.now(ZONE_ID);
+        String nowText = now.format(DATE_TIME_FORMATTER);
+        List<Map<String, Object>> assetOptions = new ArrayList<>();
+        for (Asset asset : assets) {
+            if (asset == null) {
+                continue;
+            }
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", asset.getId());
+            map.put("name", asset.getAssetName());
+            map.put("type", asset.getType() == null ? null : asset.getType().getType());
+            assetOptions.add(map);
+        }
+        List<Map<String, Object>> categoryOptions = new ArrayList<>();
+        for (BillCategory category : categories) {
+            if (category == null) {
+                continue;
+            }
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", category.getId());
+            map.put("name", category.getBillCategoryName());
+            categoryOptions.add(map);
+        }
+        return """
+                你是一个记账文本解析器。你只需要输出一个JSON对象，禁止输出markdown、解释、前后缀。
+                当前北京时间是：%s。
+                目标账单类型：%s。
+                可用账户列表(JSON)：%s。
+                可用分类列表(JSON)：%s。
+
+                输出JSON字段固定为：
+                {
+                  "status":"SUCCESS|IRRELEVANT|MISSING_INFO|ASSET_NOT_FOUND|CATEGORY_NOT_FOUND",
+                  "reason":"失败原因，成功时可为null",
+                  "amount":"金额数字字符串，如3.5；缺失时null",
+                  "billTime":"yyyy-MM-dd HH:mm:ss，缺失时null",
+                  "remark":"备注，允许null",
+                  "assetName":"支出/收入使用的账户名；其他情况null",
+                  "billCategoryName":"支出/收入使用的分类名；其他情况null",
+                  "outAssetName":"转账转出账户名；其他情况null",
+                  "inAssetName":"转账转入账户名；其他情况null",
+                  "transferFee":"转账手续费数字字符串，允许null"
+                }
+
+                规则：
+                1. 只能从提供的可用账户和可用分类中选择名称，不能编造。
+                2. 用户文本与记账无关时，status=IRRELEVANT。
+                3. 关键信息缺失时，status=MISSING_INFO（例如金额或账户缺失）。
+                4. 文本提到的账户不在列表中时，status=ASSET_NOT_FOUND。
+                5. 文本提到的分类不在列表中时，status=CATEGORY_NOT_FOUND。
+                6. status=SUCCESS时，amount必须是正数数字字符串，其他字段按类型填写。
+                7. 账单类型为%s，严格按此类型解析，不要改类型。
+                """.formatted(nowText, type.getType(), JSON.toJSONString(assetOptions), JSON.toJSONString(categoryOptions), type.getType());
+    }
+
+    private String extractJson(String text) {
+        String raw = text.trim();
+        int start = raw.indexOf('{');
+        int end = raw.lastIndexOf('}');
+        if (start < 0 || end < 0 || end < start) {
+            throw new AiResponseFormatException("AI返回格式错误");
+        }
+        return raw.substring(start, end + 1);
+    }
+
+    private BigDecimal parseBigDecimal(Object value, boolean required) {
+        if (value == null) {
+            if (required) {
+                throw new AiInfoMissingException("金额缺失");
+            }
+            return null;
+        }
+        String text = trimToNull(String.valueOf(value));
+        if (text == null || "null".equalsIgnoreCase(text)) {
+            if (required) {
+                throw new AiInfoMissingException("金额缺失");
+            }
+            return null;
+        }
+        try {
+            return new BigDecimal(text);
+        } catch (Exception e) {
+            throw new AiResponseFormatException("金额格式错误");
+        }
+    }
+
+    private Timestamp parseTimestamp(String billTime) {
+        if (billTime == null || "null".equalsIgnoreCase(billTime)) {
+            return null;
+        }
+        String normalized = billTime.trim().replace("T", " ");
+        if (normalized.length() == 16) {
+            normalized += ":00";
+        } else if (normalized.length() == 10) {
+            normalized += " 00:00:00";
+        }
+        try {
+            return Timestamp.valueOf(normalized);
+        } catch (Exception e) {
+            throw new AiResponseFormatException("时间格式错误");
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.replace(" ", "").toLowerCase(Locale.ROOT);
+    }
+
+    private void writeParseLog(Integer userId, Integer bookId, BillType type, String text, String llmRaw, String status,
+                               String errorCode, String errorMessage, Long latencyMs) {
+        try {
+            AiBillParseLog logEntity = new AiBillParseLog();
+            logEntity.setUserId(userId);
+            logEntity.setBookId(bookId);
+            logEntity.setType(type);
+            logEntity.setInputText(text);
+            logEntity.setModelName(modelName);
+            logEntity.setStatus(status);
+            logEntity.setErrorCode(errorCode);
+            logEntity.setErrorMessage(errorMessage);
+            logEntity.setLlmRawJson(llmRaw);
+            logEntity.setLatencyMs(latencyMs);
+            logEntity.setCreateTime(TimeComputer.getNow());
+            aiBillParseLogMapper.insertAiBillParseLogSelective(logEntity);
+        } catch (Exception e) {
+            log.warn("写入AI解析日志失败: {}", e.getMessage());
+        }
+    }
+
+    private String mapLogStatus(BaseException e) {
+        if (e instanceof AiIrrelevantTextException) {
+            return STATUS_IRRELEVANT;
+        }
+        if (e instanceof AiInfoMissingException) {
+            return STATUS_MISSING_INFO;
+        }
+        if (e instanceof AiAssetNotFoundException) {
+            return STATUS_ASSET_NOT_FOUND;
+        }
+        if (e instanceof AiCategoryNotFoundException) {
+            return STATUS_CATEGORY_NOT_FOUND;
+        }
+        if (e instanceof AiRateLimitException) {
+            return "RATE_LIMIT";
+        }
+        if (e instanceof AiTimeoutException) {
+            return "TIMEOUT";
+        }
+        if (e instanceof AiUnsupportedTypeException) {
+            return "UNSUPPORTED_TYPE";
+        }
+        if (e instanceof ParamsException) {
+            return "INVALID_PARAM";
+        }
+        if (e instanceof PermissionDeniedException) {
+            return "NO_PERMISSION";
+        }
+        return "FAILED";
+    }
+
+    private static class LlmParseResult {
+        private BigDecimal amount;
+        private BigDecimal transferFee;
+        private Timestamp billTime;
+        private String remark;
+        private String assetName;
+        private String billCategoryName;
+        private String outAssetName;
+        private String inAssetName;
+    }
+}

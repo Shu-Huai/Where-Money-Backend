@@ -21,7 +21,7 @@ public class JasyptComputerTests {
 
     @Test
     public void jasyptEncryptTest() {
-        String encryptString = jasyptComputer.encrypt("prwq0421");
+        String encryptString = jasyptComputer.encrypt("sk-7b49a2f6981f4599b0df02e0dd26245f");
         log.info("加密测试：" + encryptString);
         log.info("解密测试：" + jasyptComputer.decrypt(encryptString));
     }

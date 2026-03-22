@@ -14,11 +14,13 @@ import org.springframework.web.multipart.MultipartFile;
 import shuhuai.wheremoney.entity.*;
 import shuhuai.wheremoney.response.Response;
 import shuhuai.wheremoney.response.bill.*;
+import shuhuai.wheremoney.service.AiBillService;
 import shuhuai.wheremoney.service.AssetService;
 import shuhuai.wheremoney.service.BillCategoryService;
 import shuhuai.wheremoney.service.BillService;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
 import shuhuai.wheremoney.type.BillType;
+import shuhuai.wheremoney.utils.TokenValidator;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -40,6 +42,11 @@ public class BillController extends BaseController {
      */
     @Resource
     private BillService billService;
+    /**
+     * AI账单解析服务实例
+     */
+    @Resource
+    private AiBillService aiBillService;
     /**
      * 资产服务实例，用于处理资产相关的业务逻辑
      */
@@ -80,6 +87,27 @@ public class BillController extends BaseController {
         // 调用服务层添加账单
         billService.addBill(bookId, inAssetId, outAssetId, payBillId, billCategoryId, type, amount, transferFee, time, remark, refunded, file);
         return new Response<>(200, "新建账单成功", null);
+    }
+
+    /**
+     * AI解析账单文本
+     * @param bookId 账本ID
+     * @param type 账单类型（支出/收入/转账）
+     * @param text 待解析文本
+     * @return 结构化账单草稿
+     */
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "401", description = "token过期"),
+            @ApiResponse(responseCode = "422", description = "参数错误或解析失败"),
+            @ApiResponse(responseCode = "429", description = "请求过于频繁"),
+            @ApiResponse(responseCode = "500", description = "服务器错误")
+    })
+    @RequestMapping(value = "/ai/parse", method = RequestMethod.POST)
+    @Operation(summary = "AI解析账单文本")
+    public Response<AiParseBillResponse> parseBillByAi(@RequestParam Integer bookId, @RequestParam BillType type, @RequestParam String text) {
+        Integer userId = Integer.parseInt(TokenValidator.getUser().get("userId"));
+        AiParseBillResponse response = aiBillService.parseBill(userId, bookId, type, text);
+        return new Response<>(200, "AI解析成功", response);
     }
 
     /**

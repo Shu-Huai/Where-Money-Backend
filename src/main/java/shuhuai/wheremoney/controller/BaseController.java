@@ -16,6 +16,16 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.mybatis.spring.MyBatisSystemException;
 import shuhuai.wheremoney.response.Response;
 import shuhuai.wheremoney.service.excep.BaseException;
+import shuhuai.wheremoney.service.excep.ai.AiAmbiguousMatchException;
+import shuhuai.wheremoney.service.excep.ai.AiAssetNotFoundException;
+import shuhuai.wheremoney.service.excep.ai.AiCategoryNotFoundException;
+import shuhuai.wheremoney.service.excep.ai.AiInfoMissingException;
+import shuhuai.wheremoney.service.excep.ai.AiInvokeException;
+import shuhuai.wheremoney.service.excep.ai.AiIrrelevantTextException;
+import shuhuai.wheremoney.service.excep.ai.AiRateLimitException;
+import shuhuai.wheremoney.service.excep.ai.AiResponseFormatException;
+import shuhuai.wheremoney.service.excep.ai.AiTimeoutException;
+import shuhuai.wheremoney.service.excep.ai.AiUnsupportedTypeException;
 import shuhuai.wheremoney.service.excep.book.TitleOccupiedException;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
 import shuhuai.wheremoney.service.excep.common.PermissionDeniedException;
@@ -62,6 +72,22 @@ public class BaseController {
         } else if (error instanceof PermissionDeniedException) {
             // 权限不足
             response.setCode(403);
+        } else if (error instanceof AiRateLimitException) {
+            // AI解析限流
+            response.setCode(429);
+        } else if (error instanceof AiUnsupportedTypeException
+                || error instanceof AiIrrelevantTextException
+                || error instanceof AiInfoMissingException
+                || error instanceof AiAssetNotFoundException
+                || error instanceof AiCategoryNotFoundException
+                || error instanceof AiAmbiguousMatchException) {
+            // AI解析业务失败
+            response.setCode(422);
+        } else if (error instanceof AiInvokeException
+                || error instanceof AiTimeoutException
+                || error instanceof AiResponseFormatException) {
+            // AI调用或模型输出异常
+            response.setCode(500);
         }
         // 设置响应消息
         response.setMessage(error.getMessage());

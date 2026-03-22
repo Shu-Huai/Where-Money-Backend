@@ -318,3 +318,56 @@ set @stmt := if(@idx_exists = 0, 'create index out_asset_id on transfer_bill (ou
 prepare stmt from @stmt;
 execute stmt;
 deallocate prepare stmt;
+
+create table if not exists ai_bill_parse_log
+(
+    id            int auto_increment
+        primary key,
+    user_id       int                                      not null,
+    book_id       int                                      not null,
+    type          enum ('收入', '支出', '转账', '退款') not null,
+    input_text    text                                     not null,
+    model_name    varchar(127)                             null,
+    status        varchar(63)                              not null,
+    error_code    varchar(63)                              null,
+    error_message varchar(255)                             null,
+    llm_raw_json  text                                     null,
+    latency_ms    bigint                                   not null,
+    create_time   timestamp      default CURRENT_TIMESTAMP not null
+);
+
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'ai_bill_parse_log'
+      and index_name = 'user_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index user_id on ai_bill_parse_log (user_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
+
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'ai_bill_parse_log'
+      and index_name = 'book_id'
+);
+set @stmt := if(@idx_exists = 0, 'create index book_id on ai_bill_parse_log (book_id)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
+
+set @idx_exists := (
+    select count(1)
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'ai_bill_parse_log'
+      and index_name = 'create_time'
+);
+set @stmt := if(@idx_exists = 0, 'create index create_time on ai_bill_parse_log (create_time)', 'select 1');
+prepare stmt from @stmt;
+execute stmt;
+deallocate prepare stmt;
