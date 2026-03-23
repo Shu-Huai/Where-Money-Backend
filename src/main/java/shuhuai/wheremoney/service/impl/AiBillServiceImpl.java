@@ -12,26 +12,17 @@ import org.springframework.stereotype.Service;
 import shuhuai.wheremoney.entity.AiBillParseLog;
 import shuhuai.wheremoney.entity.Asset;
 import shuhuai.wheremoney.entity.BillCategory;
-import shuhuai.wheremoney.entity.Book;
 import shuhuai.wheremoney.mapper.AiBillParseLogMapper;
-import shuhuai.wheremoney.mapper.BookMapper;
 import shuhuai.wheremoney.response.bill.AiParseBillResponse;
+import shuhuai.wheremoney.response.bill.LlmParseResult;
 import shuhuai.wheremoney.service.AiBillService;
 import shuhuai.wheremoney.service.AssetService;
 import shuhuai.wheremoney.service.BillCategoryService;
 import shuhuai.wheremoney.service.excep.BaseException;
-import shuhuai.wheremoney.service.excep.ai.AiAmbiguousMatchException;
-import shuhuai.wheremoney.service.excep.ai.AiAssetNotFoundException;
-import shuhuai.wheremoney.service.excep.ai.AiCategoryNotFoundException;
-import shuhuai.wheremoney.service.excep.ai.AiInfoMissingException;
-import shuhuai.wheremoney.service.excep.ai.AiInvokeException;
-import shuhuai.wheremoney.service.excep.ai.AiIrrelevantTextException;
-import shuhuai.wheremoney.service.excep.ai.AiRateLimitException;
-import shuhuai.wheremoney.service.excep.ai.AiResponseFormatException;
-import shuhuai.wheremoney.service.excep.ai.AiTimeoutException;
-import shuhuai.wheremoney.service.excep.ai.AiUnsupportedTypeException;
+import shuhuai.wheremoney.service.excep.ai.*;
 import shuhuai.wheremoney.service.excep.common.ParamsException;
 import shuhuai.wheremoney.service.excep.common.PermissionDeniedException;
+import shuhuai.wheremoney.type.AiStatus;
 import shuhuai.wheremoney.type.BillType;
 import shuhuai.wheremoney.utils.RedisConnector;
 import shuhuai.wheremoney.utils.TimeComputer;
@@ -41,18 +32,8 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * AI账单解析服务实现
@@ -60,15 +41,11 @@ import java.util.concurrent.TimeoutException;
 @Service
 @Slf4j
 public class AiBillServiceImpl implements AiBillService {
-    private static final ZoneId ZONE_ID = ZoneId.of("Asia/Shanghai");
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final DateTimeFormatter RATE_LIMIT_KEY_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
     private static final String STATUS_SUCCESS = "SUCCESS";
     private static final String STATUS_IRRELEVANT = "IRRELEVANT";
     private static final String STATUS_MISSING_INFO = "MISSING_INFO";
     private static final String STATUS_ASSET_NOT_FOUND = "ASSET_NOT_FOUND";
     private static final String STATUS_CATEGORY_NOT_FOUND = "CATEGORY_NOT_FOUND";
-    private static final Map<String, Object> EXTRA_BODY = Map.of("enable_thinking", Boolean.FALSE);
 
     private final ChatClient chatClient;
     private final ExecutorService llmExecutor = Executors.newVirtualThreadPerTaskExecutor();
@@ -89,9 +66,6 @@ public class AiBillServiceImpl implements AiBillService {
     private BillCategoryService billCategoryService;
 
     @Resource
-    private BookMapper bookMapper;
-
-    @Resource
     private RedisConnector redisConnector;
 
     @Resource
@@ -108,17 +82,16 @@ public class AiBillServiceImpl implements AiBillService {
 
     @Override
     public AiParseBillResponse parseBill(Integer userId, Integer bookId, BillType type, String text) {
+        if (userId == null || bookId == null || type == null || text == null || text.trim().isEmpty()) {
+            throw new ParamsException("参数错误");
+        }
         long startTime = System.currentTimeMillis();
         String llmRaw = null;
         String logStatus = "FAILED";
         String errorCode = null;
         String errorMessage = null;
         try {
-            validateParams(userId, bookId, type, text);
-            validateBookPermission(userId, bookId);
-            validateType(type);
             checkRateLimit(userId);
-
             List<Asset> assets = assetService.getAllAsset(userId);
             if (assets == null) {
                 assets = new ArrayList<>();
@@ -126,8 +99,13 @@ public class AiBillServiceImpl implements AiBillService {
             if (assets.isEmpty()) {
                 throw new AiAssetNotFoundException("没有可用账户");
             }
-            List<BillCategory> categories = getCategoriesByType(bookId, type);
-
+            List<BillCategory> categories = new ArrayList<>();
+            if (type != BillType.转账) {
+                categories = billCategoryService.getBillCategoriesByBookType(bookId, type);
+                if (categories == null || categories.isEmpty()) {
+                    throw new AiCategoryNotFoundException("没有可用分类");
+                }
+            }
             String systemPrompt = buildSystemPrompt(type, assets, categories);
             llmRaw = callLlm(systemPrompt, text);
             LlmParseResult llmResult = parseLlmResult(llmRaw);
@@ -144,29 +122,19 @@ public class AiBillServiceImpl implements AiBillService {
             errorMessage = e.getMessage();
             throw new AiInvokeException("AI调用失败");
         } finally {
-            writeParseLog(userId, bookId, type, text, llmRaw, logStatus, errorCode, errorMessage, System.currentTimeMillis() - startTime);
-        }
-    }
-
-    private void validateParams(Integer userId, Integer bookId, BillType type, String text) {
-        if (userId == null || bookId == null || type == null || text == null || text.trim().isEmpty()) {
-            throw new ParamsException("参数错误");
-        }
-    }
-
-    private void validateBookPermission(Integer userId, Integer bookId) {
-        Book book = bookMapper.selectBookById(bookId);
-        if (book == null) {
-            throw new ParamsException("账本不存在");
-        }
-        if (!Objects.equals(book.getUserId(), userId)) {
-            throw new PermissionDeniedException("权限不足");
-        }
-    }
-
-    private void validateType(BillType type) {
-        if (type == BillType.退款) {
-            throw new AiUnsupportedTypeException("退款暂不支持AI解析");
+            AiBillParseLog logEntity = new AiBillParseLog();
+            logEntity.setUserId(userId);
+            logEntity.setBookId(bookId);
+            logEntity.setType(type);
+            logEntity.setInputText(text);
+            logEntity.setModelName(modelName);
+            logEntity.setStatus(logStatus);
+            logEntity.setErrorCode(errorCode);
+            logEntity.setErrorMessage(errorMessage);
+            logEntity.setLlmRawJson(llmRaw);
+            logEntity.setLatencyMs(System.currentTimeMillis() - startTime);
+            logEntity.setCreateTime(TimeComputer.getNow());
+            aiBillParseLogMapper.insertAiBillParseLogSelective(logEntity);
         }
     }
 
@@ -174,7 +142,7 @@ public class AiBillServiceImpl implements AiBillService {
         if (limitPerMinute == null || limitPerMinute <= 0) {
             return;
         }
-        String minuteKey = LocalDateTime.now(ZONE_ID).format(RATE_LIMIT_KEY_TIME_FORMATTER);
+        String minuteKey = LocalDateTime.now(ZoneId.of("Asia/Shanghai")).format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
         String redisKey = "ai:bill:parse:limit:" + userId + ":" + minuteKey;
         Long count = redisConnector.increaseObject(redisKey, 1L);
         if (count == null) {
@@ -188,113 +156,100 @@ public class AiBillServiceImpl implements AiBillService {
         }
     }
 
-    private List<BillCategory> getCategoriesByType(Integer bookId, BillType type) {
-        if (type == BillType.转账) {
-            return new ArrayList<>();
-        }
-        List<BillCategory> categories = billCategoryService.getBillCategoriesByBookType(bookId, type);
-        if (categories == null || categories.isEmpty()) {
-            throw new AiCategoryNotFoundException("没有可用分类");
-        }
-        return categories;
-    }
-
     private String callLlm(String systemPrompt, String text) {
         Future<String> future = llmExecutor.submit(() ->
                 chatClient.prompt()
-                        .options(OpenAiChatOptions.builder().extraBody(EXTRA_BODY).build())
+                        .options(OpenAiChatOptions.builder().extraBody(Map.of("enable_thinking", Boolean.FALSE)).build())
                         .system(systemPrompt)
                         .user(text)
                         .call()
                         .content()
         );
         try {
-            return future.get(timeoutMs == null ? 12000L : timeoutMs, TimeUnit.MILLISECONDS);
+            return future.get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             future.cancel(true);
-            throw new AiTimeoutException("AI解析超时");
+            throw new AiTimeoutException("AI 解析超时");
         } catch (ExecutionException e) {
-            throw new AiInvokeException("AI调用失败");
+            throw new AiInvokeException("AI 调用失败");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new AiInvokeException("AI调用失败");
+            throw new AiInvokeException("AI 调用失败");
         }
     }
 
     private LlmParseResult parseLlmResult(String llmRaw) {
         if (llmRaw == null || llmRaw.trim().isEmpty()) {
-            throw new AiResponseFormatException("AI未返回有效内容");
+            throw new AiResponseFormatException("AI 未返回有效内容");
         }
         String jsonText = extractJson(llmRaw);
         JSONObject object;
         try {
             object = JSON.parseObject(jsonText);
         } catch (Exception e) {
-            throw new AiResponseFormatException("AI返回格式错误");
+            throw new AiResponseFormatException("AI 返回格式错误");
         }
         if (object == null) {
-            throw new AiResponseFormatException("AI返回格式错误");
+            throw new AiResponseFormatException("AI 返回格式错误");
         }
-        String status = trimToNull(object.getString("status"));
+        AiStatus status;
+        try {
+            status = AiStatus.valueOf(trimToNull(object.getString("status")));
+        } catch (IllegalArgumentException e) {
+            throw new AiResponseFormatException("AI 返回格式错误");
+        }
         String reason = trimToNull(object.getString("reason"));
-        if (status == null) {
-            throw new AiResponseFormatException("AI返回格式错误");
-        }
-        if (!STATUS_SUCCESS.equals(status)) {
-            handleFailedStatus(status, reason);
+        if (!status.equals(AiStatus.SUCCESS)) {
+            String message = reason == null ? "AI 解析失败" : reason;
+            switch (status) {
+                case AiStatus.IRRELEVANT -> throw new AiIrrelevantTextException(message);
+                case AiStatus.MISSING_INFO -> throw new AiInfoMissingException(message);
+                case AiStatus.ASSET_NOT_FOUND -> throw new AiAssetNotFoundException(message);
+                case AiStatus.CATEGORY_NOT_FOUND -> throw new AiCategoryNotFoundException(message);
+                default -> throw new AiResponseFormatException("AI 返回了不支持的状态: " + status);
+            }
         }
         LlmParseResult result = new LlmParseResult();
-        result.amount = parseBigDecimal(object.get("amount"), true);
-        result.transferFee = parseBigDecimal(object.get("transferFee"), false);
-        result.billTime = parseTimestamp(trimToNull(object.getString("billTime")));
-        result.remark = trimToNull(object.getString("remark"));
-        result.assetName = trimToNull(object.getString("assetName"));
-        result.billCategoryName = trimToNull(object.getString("billCategoryName"));
-        result.outAssetName = trimToNull(object.getString("outAssetName"));
-        result.inAssetName = trimToNull(object.getString("inAssetName"));
+        result.setAmount(parseBigDecimal(object.get("amount"), true));
+        result.setTransferFee(parseBigDecimal(object.get("transferFee"), false));
+        result.setBillTime(parseTimestamp(trimToNull(object.getString("billTime"))));
+        result.setRemark(trimToNull(object.getString("remark")));
+        result.setAssetName(trimToNull(object.getString("assetName")));
+        result.setBillCategoryName(trimToNull(object.getString("billCategoryName")));
+        result.setOutAssetName(trimToNull(object.getString("outAssetName")));
+        result.setInAssetName(trimToNull(object.getString("inAssetName")));
         return result;
     }
 
-    private void handleFailedStatus(String status, String reason) {
-        String message = reason == null ? "AI解析失败" : reason;
-        switch (status) {
-            case STATUS_IRRELEVANT -> throw new AiIrrelevantTextException(message);
-            case STATUS_MISSING_INFO -> throw new AiInfoMissingException(message);
-            case STATUS_ASSET_NOT_FOUND -> throw new AiAssetNotFoundException(message);
-            case STATUS_CATEGORY_NOT_FOUND -> throw new AiCategoryNotFoundException(message);
-            default -> throw new AiResponseFormatException("AI返回了不支持的状态: " + status);
-        }
-    }
-
     private AiParseBillResponse buildResponse(BillType type, List<Asset> assets, List<BillCategory> categories, LlmParseResult llmResult) {
-        if (llmResult.amount == null || llmResult.amount.compareTo(BigDecimal.ZERO) <= 0) {
+        if (llmResult.getAmount() == null || llmResult.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new AiInfoMissingException("金额缺失或不合法");
         }
         AiParseBillResponse response = new AiParseBillResponse();
         response.setType(type);
-        response.setAmount(llmResult.amount);
-        response.setBillTime(llmResult.billTime);
-        response.setRemark(llmResult.remark);
+        response.setAmount(llmResult.getAmount());
+        response.setBillTime(llmResult.getBillTime());
+        response.setRemark(llmResult.getRemark());
         switch (type) {
             case 支出 -> {
-                Asset outAsset = matchAsset(llmResult.assetName, assets);
-                BillCategory category = matchCategory(llmResult.billCategoryName, categories);
+                Asset outAsset = matchAsset(llmResult.getAssetName(), assets);
+                BillCategory category = matchCategory(llmResult.getBillCategoryName(), categories);
                 response.setOutAssetId(outAsset.getId());
                 response.setOutAssetName(outAsset.getAssetName());
                 response.setBillCategoryId(category.getId());
                 response.setBillCategoryName(category.getBillCategoryName());
             }
             case 收入 -> {
-                Asset inAsset = matchAsset(llmResult.assetName, assets);
-                BillCategory category = matchCategory(llmResult.billCategoryName, categories);
+                Asset inAsset = matchAsset(llmResult.getAssetName(), assets);
+                BillCategory category = matchCategory(llmResult.getBillCategoryName(), categories);
                 response.setInAssetId(inAsset.getId());
                 response.setInAssetName(inAsset.getAssetName());
                 response.setBillCategoryId(category.getId());
                 response.setBillCategoryName(category.getBillCategoryName());
             }
             case 转账 -> {
-                Asset outAsset = matchAsset(llmResult.outAssetName, assets);
-                Asset inAsset = matchAsset(llmResult.inAssetName, assets);
+                Asset outAsset = matchAsset(llmResult.getOutAssetName(), assets);
+                Asset inAsset = matchAsset(llmResult.getInAssetName(), assets);
                 if (Objects.equals(outAsset.getId(), inAsset.getId())) {
                     throw new AiInfoMissingException("转入和转出账户不能相同");
                 }
@@ -302,11 +257,11 @@ public class AiBillServiceImpl implements AiBillService {
                 response.setOutAssetName(outAsset.getAssetName());
                 response.setInAssetId(inAsset.getId());
                 response.setInAssetName(inAsset.getAssetName());
-                if (llmResult.transferFee != null) {
-                    if (llmResult.transferFee.compareTo(BigDecimal.ZERO) < 0) {
+                if (llmResult.getTransferFee() != null) {
+                    if (llmResult.getTransferFee().compareTo(BigDecimal.ZERO) < 0) {
                         throw new AiInfoMissingException("手续费不能小于0");
                     }
-                    response.setTransferFee(llmResult.transferFee);
+                    response.setTransferFee(llmResult.getTransferFee());
                 }
             }
             default -> throw new AiUnsupportedTypeException("不支持的账单类型");
@@ -388,8 +343,8 @@ public class AiBillServiceImpl implements AiBillService {
     }
 
     private String buildSystemPrompt(BillType type, List<Asset> assets, List<BillCategory> categories) {
-        LocalDateTime now = LocalDateTime.now(ZONE_ID);
-        String nowText = now.format(DATE_TIME_FORMATTER);
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
+        String nowText = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         List<Map<String, Object>> assetOptions = new ArrayList<>();
         for (Asset asset : assets) {
             if (asset == null) {
@@ -503,27 +458,6 @@ public class AiBillServiceImpl implements AiBillService {
         return value == null ? "" : value.replace(" ", "").toLowerCase(Locale.ROOT);
     }
 
-    private void writeParseLog(Integer userId, Integer bookId, BillType type, String text, String llmRaw, String status,
-                               String errorCode, String errorMessage, Long latencyMs) {
-        try {
-            AiBillParseLog logEntity = new AiBillParseLog();
-            logEntity.setUserId(userId);
-            logEntity.setBookId(bookId);
-            logEntity.setType(type);
-            logEntity.setInputText(text);
-            logEntity.setModelName(modelName);
-            logEntity.setStatus(status);
-            logEntity.setErrorCode(errorCode);
-            logEntity.setErrorMessage(errorMessage);
-            logEntity.setLlmRawJson(llmRaw);
-            logEntity.setLatencyMs(latencyMs);
-            logEntity.setCreateTime(TimeComputer.getNow());
-            aiBillParseLogMapper.insertAiBillParseLogSelective(logEntity);
-        } catch (Exception e) {
-            log.warn("写入AI解析日志失败: {}", e.getMessage());
-        }
-    }
-
     private String mapLogStatus(BaseException e) {
         if (e instanceof AiIrrelevantTextException) {
             return STATUS_IRRELEVANT;
@@ -553,16 +487,5 @@ public class AiBillServiceImpl implements AiBillService {
             return "NO_PERMISSION";
         }
         return "FAILED";
-    }
-
-    private static class LlmParseResult {
-        private BigDecimal amount;
-        private BigDecimal transferFee;
-        private Timestamp billTime;
-        private String remark;
-        private String assetName;
-        private String billCategoryName;
-        private String outAssetName;
-        private String inAssetName;
     }
 }
